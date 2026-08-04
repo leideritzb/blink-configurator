@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadeaukaart Configurator — Blink</title>
+  <link href="https://fonts.googleapis.com/css2?family=BioRhyme:wght@700;800&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Source Sans 3', system-ui, sans-serif;
+      background: #f8f0e3;
+      color: #1a1a1a;
+    }
+
+    /* ── SIDEBAR ─────────────────────────────────────── */
+    .sidebar {
+      width: 272px;
+      flex-shrink: 0;
+      background: #fff;
+      border-right: 1px solid #e4e4e0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid #e4e4e0;
+    }
+
+    .sidebar-logo {
+      height: 22px;
+      margin-bottom: 10px;
+    }
+
+    .sidebar-header h1 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 2px;
+    }
+
+    .sidebar-header p {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .side-tabs {
+      display: flex;
+      border-bottom: 1px solid #e4e4e0;
+      flex-shrink: 0;
+    }
+
+    .side-tab {
+      flex: 1;
+      padding: 9px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: #999;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .side-tab.active {
+      color: #1a1a1a;
+      border-bottom-color: #1a1a1a;
+    }
+
+    .side-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: none;
+    }
+
+    .side-content.active { display: block; }
+
+    .section { margin-bottom: 22px; }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #aaa;
+      margin-bottom: 12px;
+    }
+
+    .ctrl { margin-bottom: 13px; }
+
+    .ctrl > label {
+      display: block;
+      font-size: 12px;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    .ctrl-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="color"] {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      padding: 2px;
+      background: none;
+      flex-shrink: 0;
+    }
+
+    .hex-input {
+      width: 86px;
+      padding: 6px 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #333;
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      font-size: 13px;
+      color: #333;
+      font-family: inherit;
+    }
+    textarea.text-input {
+      resize: vertical;
+      line-height: 1.45;
+      min-height: 60px;
+    }
+
+    .radio-group { display: flex; flex-direction: column; gap: 8px; }
+
+    .radio-opt {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #333;
+    }
+
+    .range-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #444;
+      margin-bottom: 5px;
+    }
+
+    input[type="range"] { width: 100%; accent-color: #1a1a1a; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-row > span {
+      font-size: 12px;
+      color: #444;
+    }
+
+    .toggle {
+      position: relative;
+      width: 38px;
+      height: 21px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .tog-slider {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 21px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .tog-slider::before {
+      content: '';
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #fff;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .toggle input:checked + .tog-slider { background: #2c6e49; }
+    .toggle input:checked + .tog-slider::before { transform: translateX(17px); }
+
+    .hidden { display: none !important; }
+
+    /* ── PREVIEW AREA ────────────────────────────────── */
+    .preview-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: #fff;
+      border-bottom: 1px solid #e4e4e0;
+      flex-shrink: 0;
+    }
+
+    .view-pills {
+      display: flex;
+      gap: 3px;
+      background: #f8f0e3;
+      border-radius: 7px;
+      padding: 3px;
+    }
+
+    .view-pill {
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #999;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .view-pill.active {
+      background: #fff;
+      color: #1a1a1a;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .export-btn {
+      padding: 7px 18px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .preview-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      overflow: hidden;
+    }
+
+    /* ── SPREAD ──────────────────────────────────────── */
+    .spread {
+      display: flex;
+      position: relative;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      transform-origin: center center;
+      /* width/height set via JS */
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: brightness 0.1s;
+    }
+
+    .panel:hover { filter: brightness(0.96); }
+
+    /* fold indicators */
+    .panel-rug  { border-right: 1.5px dashed rgba(180,40,80,0.45); }
+    .panel-mid  { border-right: 1.5px dashed rgba(180,40,80,0.45); }
+
+    .blink-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* ── BINNENKANT BOXES ─────────────────────────── */
+
+    /* Inline SVG blinkertjes: overflow:visible zodat tiles voorbij de viewport
+       zichtbaar zijn in bleed-zone (panel-CSS regelt het afknippen) */
+    .blink-inline {
+      overflow: visible;
+    }
+
+    /* Gradient handle: alleen zichtbaar bij hover of selectie */
+
+    /* ── BEELDBANK MODAAL ───────────────────────────── */
+    #beeldbankOverlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.55);
+      align-items: center; justify-content: center;
+    }
+    #beeldbankOverlay.open { display: flex; }
+    #beeldbankModal {
+      background: #fff;
+      border-radius: 10px;
+      width: 480px; max-width: 95vw;
+      max-height: 80vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    }
+    #beeldbankModal header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px; font-weight: 600; color: #333;
+    }
+    #beeldbankModal header button {
+      background: none; border: none; font-size: 18px;
+      color: #999; cursor: pointer; line-height: 1; padding: 0 2px;
+    }
+    #beeldbankGrid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 12px;
+      overflow-y: auto;
+    }
+    .bb-thumb {
+      width: 100%;
+      min-width: 0;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+      display: block;
+    }
+    .bb-thumb:hover { border-color: #c8a84b; }
+    .bb-thumb.selected { border-color: #c8a84b; }
+    #beeldbankEmpty {
+      padding: 32px 16px;
+      text-align: center;
+      color: #aaa; font-size: 12px;
+    }
+
+    /* ── CUSTOM COLOR PICKER ────────────────────────── */
+    .cp-swatch {
+      width: 36px; height: 36px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.15);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .cp-popup {
+      position: absolute;
+      z-index: 500;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      padding: 12px;
+      width: 220px;
+      margin-top: 6px;
+      left: 0; top: 100%;
+    }
+    .cp-canvas-wrap {
+      position: relative;
+      width: 196px; height: 140px;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .cp-canvas { display: block; width: 100%; height: 100%; border-radius: 6px; }
+    .cp-indicator {
+      position: absolute;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+      pointer-events: none;
+      transform: translate(-50%,-50%);
+    }
+    .cp-hue {
+      width: 100%; height: 12px;
+      margin-top: 10px;
+      border-radius: 6px;
+      background: linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);
+      -webkit-appearance: none; appearance: none;
+      outline: none; cursor: pointer; border: none;
+    }
+    .cp-hue::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    .cp-hex-row {
+      display: flex; align-items: center;
+      margin-top: 10px; gap: 4px;
+      background: #f4f4f4; border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .cp-hex-row span { color:#999; font-size:13px; font-family:monospace; }
+    .cp-hex-input {
+      flex:1; border:none; background:transparent;
+      font-size:13px; font-family:monospace;
+      outline:none; text-transform:uppercase; color:#333;
+    }
+    .cp-reset {
+      display: block; margin-top: 7px;
+      font-size: 11px; color: #999; cursor: pointer;
+      text-align: right; text-decoration: underline;
+      background: none; border: none; padding: 0; font-family: inherit;
+    }
+    .cp-reset:hover { color: #555; }
+
+    /* ── ZOOM OVERLAY ───────────────────────────────── */
+    .zoom-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-bg.open { display: flex; }
+
+    .zoom-close {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 34px;
+      height: 34px;
+      background: rgba(255,255,255,0.92);
+      border-radius: 50%;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 101;
+      line-height: 1;
+    }
+
+    .zoom-inner {
+      position: relative;
+      overflow: hidden;
+    }
+  </style>
+  <style id="printPageStyle"></style>
+  <style>
+    @media print {
+      body.is-printing .sidebar,
+      body.is-printing .preview-bar,
+      body.is-printing .zoom-bg { display: none !important; }
+
+      body.is-printing,
+      body.is-printing main.preview-area {
+        margin: 0 !important; padding: 0 !important;
+        background: white !important;
+        display: block !important;
+        width: auto !important; height: auto !important;
+        overflow: visible !important;
+      }
+
+      body.is-printing .preview-wrap {
+        display: block !important;
+        padding: 0 !important;
+        width: auto !important; height: auto !important;
+        overflow: visible !important;
+        background: transparent !important;
+      }
+
+      body.is-printing #spreadOuter {
+        transform: none !important;
+        transform-origin: top left !important;
+        position: static !important;
+        display: inline-block !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h1>Cadeaukaart Configurator</h1>
+    <p>140 × 200 mm — 3-luik</p>
+  </div>
+
+  <div class="side-tabs">
+    <div class="side-tab active" data-tab="buiten" onclick="switchTab('buiten')">Buitenkant</div>
+    <div class="side-tab" data-tab="binnen" onclick="switchTab('binnen')">Binnenkant</div>
+  </div>
+
+  <!-- BUITENKANT -->
+  <div class="side-content active" id="tab-buiten">
+
+    <div class="section">
+      <div class="section-title">Algemeen</div>
+
+      <div class="ctrl">
+        <label>Achtergrondkleur</label>
+        <div class="ctrl-row" style="position:relative;">
+          <div id="cp-bgKleur"></div>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <label>Blinkertjespatroon</label>
+        <div class="radio-group">
+          <label class="radio-opt">
+            <input type="radio" name="blink" value="kleur" checked onchange="applyBlink(this.value)">
+            Gekleurde blinkertjes
+          </label>
+          <label class="radio-opt">
+            <input type="radio" name="blink" value="wit" onchange="applyBlink(this.value)">
+            Witte blinkertjes
+          </label>
+        </div>
+        <div id="opacityCtrl" class="hidden" style="margin-top:10px;">
+          <div class="ctrl" style="margin-top:8px;">
+            <label>Kleur blinkertjes</label>
+            <div class="ctrl-row" style="position:relative;">
+              <div id="cp-blinkKleur"></div>
+            </div>
+          </div>
+          <div class="range-label">
+            <span>Dekking</span><span id="opacityVal">60%</span>
+          </div>
+          <input type="range" id="opacityRange" min="30" max="100" value="60"
+            oninput="applyOpacity(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Flap</div>
+      <div class="ctrl">
+        <label>Blinkertjes flap</label>
+        <div class="radio-group">
+          <label class="radio-opt">
+            <input type="radio" name="blinkRug" value="kleur" checked onchange="applyBlinkRug(this.value)">
+            Gekleurde blinkertjes
+          </label>
+          <label class="radio-opt">
+            <input type="radio" name="blinkRug" value="wit" onchange="applyBlinkRug(this.value)">
+            Witte blinkertjes
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Voorkant</div>
+
+      <div class="ctrl">
+        <label>Variant</label>
+        <div class="radio-group">
+          <label class="radio-opt">
+            <input type="radio" name="variant" value="standaard" checked onchange="applyVariant(this.value)">
+            Standaard
+          </label>
+          <label class="radio-opt">
+            <input type="radio" name="variant" value="foto" onchange="applyVariant(this.value)">
+            Foto
+          </label>
+        </div>
+      </div>
+
+      <div id="fotoUploadCtrl" class="hidden">
+        <div class="ctrl">
+          <label>Foto</label>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="
+              display:flex; align-items:center; gap:6px;
+              padding:6px 12px; background:#f4f4f2; border:1px solid #ddd;
+              border-radius:5px; font-size:12px; cursor:pointer; color:#444;
+              width:100%; box-sizing:border-box;
+            ">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M6.5 1v8M3 4.5l3.5-3.5L10 4.5" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M1 10.5h11" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Kies bestand
+              <input type="file" id="fotoUpload" accept="image/*"
+                style="display:none" onchange="applyFotoUpload(this)">
+            </label>
+            <button onclick="openBeeldbank()" style="
+              display:flex; align-items:center; gap:5px;
+              padding:6px 12px; background:#f4f4f2; border:1px solid #ddd;
+              border-radius:5px; font-size:12px; color:#444; cursor:pointer;
+              width:100%; box-sizing:border-box;
+            ">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <rect x="1" y="1" width="11" height="11" rx="2" stroke="#666" stroke-width="1.4"/>
+                <circle cx="4.5" cy="4.5" r="1.2" fill="#666"/>
+                <path d="M1 9l3-3 2.5 2.5L9 5.5l3 3.5" stroke="#666" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+              Beeldbank
+            </button>
+            <button id="fotoRemove" onclick="removeFoto()" style="
+              display:none; padding:6px 10px; background:none; border:1px solid #ddd;
+              border-radius:5px; font-size:12px; color:#999; cursor:pointer;
+            ">✕</button>
+          </div>
+          <div id="fotoFilename" style="font-size:11px; color:#aaa; margin-top:5px;"></div>
+        </div>
+        <div id="fotoAdjustCtrl" style="display:none;">
+          <div class="ctrl">
+            <label style="display:flex;justify-content:space-between;">
+              Schaal <span id="fotoScaleVal">100%</span>
+            </label>
+            <input type="range" id="fotoScaleSlider" min="20" max="300" value="100" step="1"
+              oninput="applyFotoAdjust()">
+          </div>
+          <div class="ctrl">
+            <label>Positie horizontaal</label>
+            <input type="range" id="fotoOffXSlider" min="-50" max="50" value="0" step="1"
+              oninput="applyFotoAdjust()">
+          </div>
+          <div class="ctrl">
+            <label>Positie verticaal</label>
+            <input type="range" id="fotoOffYSlider" min="-50" max="50" value="0" step="1"
+              oninput="applyFotoAdjust()">
+          </div>
+          <div id="fotoResWarning" style="display:none; margin-top:6px; padding:6px 8px; background:#fde8e8; border:1px solid #e53e3e; border-radius:4px; font-size:11px; color:#9b1c1c; line-height:1.4;"></div>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <label>Naam</label>
+        <input type="text" class="text-input" id="naamInput" value="[naam]"
+          oninput="applyNaam(this.value)" placeholder="Naam ontvanger">
+      </div>
+
+      <div class="ctrl">
+        <div class="toggle-row">
+          <span>"Jij blinkt uit" tonen</span>
+          <label class="toggle">
+            <input type="checkbox" id="jbuToggle" checked onchange="applyJbu(this.checked)">
+            <span class="tog-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <label>Logo (PNG / SVG / JPG)</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label style="
+            display:inline-flex; align-items:center; gap:6px;
+            padding:6px 12px; background:#f4f4f2; border:1px solid #ddd;
+            border-radius:5px; font-size:12px; cursor:pointer; color:#444;
+          ">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M6.5 1v8M3 4.5l3.5-3.5L10 4.5" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M1 10.5h11" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Kies bestand
+            <input type="file" id="logoUpload" accept="image/*,.svg"
+              style="display:none" onchange="applyLogo(this)">
+          </label>
+          <button id="logoRemove" onclick="removeLogo()" style="
+            display:none; padding:6px 10px; background:none; border:1px solid #ddd;
+            border-radius:5px; font-size:12px; color:#999; cursor:pointer;
+          ">✕</button>
+        </div>
+        <div id="logoFilename" style="font-size:11px; color:#aaa; margin-top:5px;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BINNENKANT (placeholder) -->
+  <div class="side-content" id="tab-binnen">
+
+    <div class="section">
+      <div class="section-title">Brieftekst</div>
+      <div class="ctrl">
+        <label>Intro (semibold)</label>
+        <textarea class="text-input" id="binnenIntroInput" rows="4"
+          oninput="st.binnenIntroText=this.value; renderBinnen();"></textarea>
+      </div>
+      <div class="ctrl">
+        <label>Body (light)</label>
+        <textarea class="text-input" id="binnenBodyInput" rows="6"
+          oninput="st.binnenBodyText=this.value; renderBinnen();"></textarea>
+      </div>
+      <div class="ctrl">
+        <label>Afsluiting (light)</label>
+        <textarea class="text-input" id="binnenSlotInput" rows="3"
+          oninput="st.binnenSlotText=this.value; renderBinnen();"></textarea>
+      </div>
+    </div>
+
+
+    <div class="section">
+      <div class="section-title">Kleuren</div>
+      <div class="ctrl">
+        <label>Hoofdkleur (kop + badge 1 + pijl)</label>
+        <div class="ctrl-row" style="position:relative;"><div id="cp-binnenHoofd"></div></div>
+      </div>
+      <div class="ctrl">
+        <label>Kleur logincode</label>
+        <div class="ctrl-row" style="position:relative;"><div id="cp-binnenKleur2"></div></div>
+      </div>
+      <div class="ctrl">
+        <label>Kleur wachtwoord</label>
+        <div class="ctrl-row" style="position:relative;"><div id="cp-binnenKleur3"></div></div>
+      </div>
+      <div class="ctrl">
+        <label>Kleur "zoek cadeau uit" veld</label>
+        <div class="ctrl-row" style="position:relative;"><div id="cp-binnenKleurZoek"></div></div>
+      </div>
+      <div class="ctrl">
+        <label>Boogkleur</label>
+        <div class="ctrl-row" style="position:relative;"><div id="cp-binnenBoog"></div></div>
+      </div>
+      <div class="ctrl">
+        <label>Kleur "let op" tekst</label>
+        <div class="radio-group">
+          <label class="radio-opt">
+            <input type="radio" name="disclaimerKleur" value="zwart" checked onchange="st.binnenDisclaimerKleur=this.value; renderBinnen();">
+            Zwart
+          </label>
+          <label class="radio-opt">
+            <input type="radio" name="disclaimerKleur" value="wit" onchange="st.binnenDisclaimerKleur=this.value; renderBinnen();">
+            Wit
+          </label>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</aside>
+
+<!-- ═══ PREVIEW ═══════════════════════════════════════ -->
+<main class="preview-area">
+  <div class="preview-bar">
+    <div></div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label style="display:none;">
+        <input type="checkbox" id="bleedToggle" onchange="toggleBleed(this.checked)">
+        Bleed
+      </label>
+      <label style="display:none;">
+        <input type="checkbox" id="guideToggle" onchange="toggleGuide(this.checked)">
+        Hulplijn
+      </label>
+      <button class="export-btn" id="exportBtn" onclick="exportPDF()">Download PDF</button>
+    </div>
+  </div>
+
+  <div class="preview-wrap" id="previewWrap">
+    <div id="spreadOuter" style="position:relative; transform-origin:center center; display:inline-block;">
+
+      <!-- Bleed bg (hidden by default) -->
+      <div id="bleedBg" style="display:none; position:absolute; pointer-events:none; z-index:0;"></div>
+
+      <!-- Crop marks SVG (hidden by default) -->
+      <svg id="cropSvg" style="display:none; position:absolute; top:0; left:0; overflow:visible; pointer-events:none; z-index:3;" fill="none"></svg>
+
+      <!-- Hulplijn (hidden by default, nooit in PDF) -->
+      <div id="guideLine" style="display:none; position:absolute; left:0; right:0; top:200px;
+           border-top:1px dashed rgba(220,80,20,0.8); pointer-events:none; z-index:10;">
+        <span style="position:absolute; right:4px; top:-16px; font-size:10px;
+              color:rgba(220,80,20,0.9); font-family:monospace; user-select:none;"
+              id="guideTip"></span>
+      </div>
+
+    <div class="spread" id="spread" style="position:relative; z-index:1;">
+
+      <!-- RUG / FLAP -->
+      <div class="panel panel-rug" id="panelRug"
+           style="background:#ffffff;" onclick="zoomPanel('rug')">
+        <div class="blink-overlay" id="blinkRug"></div>
+        <div id="cadeauGrad" style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom, transparent 115.98px, #fff 115.98px, transparent 100%);z-index:1;"></div>
+        <div id="cadeauTxt" style="
+          position:absolute;
+          font-family:'BioRhyme',serif;
+          font-weight:700;
+          color:#83b070;
+          white-space:nowrap;
+          transform-origin:center center;
+          z-index:2;
+        ">cadeau!</div>
+      </div>
+
+      <!-- MIDDEN LUIK -->
+      <div class="panel panel-mid" id="panelMid" onclick="zoomPanel('mid')">
+        <div class="blink-overlay" id="blinkMid"></div>
+
+        <!-- Adressering vlak (preview only) -->
+        <div id="adresBox" style="
+          position:absolute;
+          background:#F5EDD8;
+          border-radius:3px;
+        ">
+          <div id="adresInner" style="
+            position:absolute;
+            border:1px dashed #c4b49a;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          ">
+            <span id="adresTxt" style="
+              font-family:'Source Sans 3',sans-serif;
+              color:#a09080;
+            ">Adressering</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECHTER LUIK (voorkant) -->
+      <div class="panel panel-right" id="panelRight" onclick="zoomPanel('right')">
+        <div class="blink-overlay" id="blinkRight"></div>
+
+        <!-- FOTO VARIANT: achtergrond foto -->
+        <div id="fotoLayer" style="display:none; position:absolute; inset:0; z-index:0; background-size:cover; background-position:center; background-repeat:no-repeat;"></div>
+
+        <!-- FOTO VARIANT: gebogen header (gekleurde achtergrond + blinkertjes, geclipped) -->
+        <div id="headerArea" style="display:none; position:absolute; z-index:2;">
+          <div id="headerBg" style="position:absolute; inset:0;"></div>
+          <div id="blinkHeader" class="blink-overlay"></div>
+        </div>
+
+        <!-- "jij blinkt uit [naam]" -->
+        <div id="jbuBlock" style="
+          position:absolute;
+          text-align:center;
+          font-family:'BioRhyme',serif;
+          font-weight:700;
+          color:#282829;
+          line-height:1.15;
+          z-index:3;
+        ">
+          <div id="jbuLine">jij blinkt uit<img id="blinkSymbol" src="assets/svg/blinkertjes-tekst.svg"
+            style="height:0.825em; vertical-align:top; margin-left:1.2px; margin-top:-0.23em; display:inline-block;"></div>
+          <div id="naamLine">[naam]</div>
+        </div>
+
+        <!-- Witte ronde hoek rechtsonder -->
+        <div id="witteHoek" style="position:absolute; bottom:0; right:0; overflow:hidden;">
+          <img id="hoekImg" src="assets/svg/witte-ronde-hoek.svg" alt=""
+               draggable="false" style="display:block; width:100%; height:100%; object-fit:fill;">
+          <!-- Logo placeholder -->
+          <div id="logoBox" style="
+            position:absolute;
+            border:1px dashed #bbb;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          ">
+            <span id="logoTxt" style="
+              font-family:'Source Sans 3',sans-serif;
+              color:#aaa;
+            ">jouw logo</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /spread -->
+
+    <!-- BINNENKANT SPREAD (hidden by default) -->
+    <div id="spreadBinnen" class="spread" style="display:none; position:relative;">
+
+      <!-- LINKS: brief (back of voorkant, W.right = 140mm) -->
+      <div id="binnenLinks" class="panel" style="background:#f2cc7a;" onclick="zoomPanel('binnenLinks')">
+        <div id="binnenBriefWrap" style="position:absolute; box-sizing:border-box; overflow:hidden;">
+          <div id="binnenAanhef" style="font-family:'BioRhyme',serif; font-weight:700;"></div>
+          <p id="binnenIntroBold" style="font-family:'Source Sans 3',sans-serif; font-weight:600; margin:0; white-space:pre-wrap;"></p>
+          <p id="binnenBody1" style="font-family:'Source Sans 3',sans-serif; font-weight:300; margin:0; white-space:pre-wrap;"></p>
+          <p id="binnenSlot" style="font-family:'Source Sans 3',sans-serif; font-weight:300; margin:0; white-space:pre-wrap;"></p>
+        </div>
+        <div id="binnenArcLinksWrap" style="position:absolute; bottom:0; left:0; right:0; pointer-events:none;"></div>
+        <img id="binnenBlinkLogo" src="assets/svg/blink-logo.svg" alt="blink"
+             style="position:absolute; left:50%; transform:translateX(-50%); pointer-events:none; opacity:0.9;">
+      </div>
+
+      <!-- MIDDEN: instructies (back of mid, W.mid = 140mm) -->
+      <div id="binnenMidden" class="panel" style="background:#ffffff;" onclick="zoomPanel('binnenMidden')">
+        <div class="blink-overlay" id="blinkBinnenMid"></div>
+        <div id="binnenGradMid" style="position:absolute;inset:0;pointer-events:none;"></div>
+        <div id="verzilverTxt" style="position:absolute; font-family:'BioRhyme',serif; font-weight:700; line-height:1.1;"></div>
+        <div id="verzilverSub" style="position:absolute; font-family:'Source Sans 3',sans-serif; color:#444; line-height:1.4;">Volg deze stappen en zoek<br>een cadeau naar wens uit.</div>
+        <!-- Gebogen pijl (inline SVG voor dynamische kleur) -->
+        <svg id="binnenPijl" viewBox="0 0 47.83 56.61" style="position:absolute; overflow:visible;">
+          <path id="binnenPijlPath" d="M34.38,54.49c.81-1.67,1.59-3.34,2.47-4.97.14-.26,1.95-3.41,1.66-3.41-3.85-.01-6.95.21-10.72-1.06-3.64-1.23-7.09-3.2-10.15-5.52-5.64-4.28-10.17-9.76-13.48-16.01C1.33,18.16-.95,11.3.4,5.19.66,4.04,2.82-1.24,4.8.27c.92.71-.12,1.68-.46,2.48-.7,1.65-.83,3.34-.8,5.14.23,13.25,13.09,26.17,24.6,30.81,3.08,1.24,6.35,1.99,9.7,1.59.74-.09,3.44-.29,3.62-1,.18-.68-3.34-2.94-3.92-3.46-2.08-1.86-5.03-4.05-6.44-6.5-.64-1.1-.88-2.29.3-3.11,1.42-.98,2.71.25,3.8,1.06,3.08,2.28,5.76,5.11,8.56,7.73,2.54,2.39,5.52,4.23,3.31,7.76-2.22,3.53-5.01,6.83-7.58,10.11-.72.92-2.37,3.6-3.82,3.72-2.14.17-.49-1.74-1.28-2.11.72-1.49.04.02,0,0"/>
+        </svg>
+        <!-- Arc -->
+        <!-- Badge 1 — InDesign X=220.1mm (=80.1mm rel.) Y=67.137mm B=5mm H=5mm -->
+        <div id="badge1" style="position:absolute; border-radius:0; display:flex; align-items:center; justify-content:center; font-family:'BioRhyme',serif; font-weight:700; color:#fff;">1</div>
+        <!-- "Ga naar:" label — InDesign X=227mm (=87mm rel.) Y=67mm B=17mm H=5mm -->
+        <div id="label1" style="position:absolute; font-family:'BioRhyme',serif; font-weight:700; display:flex; align-items:center; overflow:hidden;">Ga naar:</div>
+        <!-- URL veld — InDesign X=220.1mm (=80.1mm rel.) Y=72.137mm B=59.9mm H=10mm -->
+        <div id="urlVeld" style="position:absolute; border-radius:0; display:flex; align-items:center; font-family:'Source Sans 3',sans-serif; font-weight:300; overflow:hidden;"></div>
+        <!-- "Zoek jouw cadeau uit" heading — Y=82.5mm (direct na URL veld) -->
+        <div id="zoekHeading" style="position:absolute; font-family:'BioRhyme',serif; font-weight:700; color:#000000; display:flex; align-items:center; overflow:hidden; white-space:nowrap;">Zoek jouw cadeau uit</div>
+        <!-- Geldigheid veld — InDesign X=220.1mm (=80.1mm rel.) Y=90.662mm B=59.9mm H=10mm -->
+        <div id="geldigVeld" style="position:absolute; border-radius:0; background:#f8f0e4; display:flex; align-items:center; font-family:'Source Sans 3',sans-serif; font-weight:300; overflow:hidden;"></div>
+
+        <div id="binnenArcMidWrap" style="position:absolute; bottom:0; left:0; right:0; pointer-events:none;"></div>
+        <!-- Disclaimer text (in arc area) -->
+        <div id="binnenDisclaimer" style="position:absolute; font-family:'Source Sans 3',sans-serif; line-height:1.45;">
+          Let op, bestel je cadeau voor bovenstaande einddatum, daarna is het helaas niet meer mogelijk om je tegoed in blinkers te verzilveren. Kunnen we je er ergens bij helpen of heb je nog een vraag? Kijk op support.jouwblink.nl, mail naar klantenservice@geefblink.nl of bel 085&nbsp;-&nbsp;760&nbsp;65&nbsp;32 (ma.&nbsp;t/m&nbsp;vrij. 9-17&nbsp;uur).
+        </div>
+      </div>
+
+      <!-- RECHTS: strip (back of rug, W.rug = 50mm) -->
+      <div id="binnenRechts" class="panel" style="background:#ffffff;" onclick="zoomPanel('binnenRechts')">
+        <div class="blink-overlay" id="blinkBinnenRechts"></div>
+        <div id="binnenGradRechts" style="position:absolute;inset:0;pointer-events:none;"></div>
+        <!-- Badge 2 — InDesign X=280mm (=0mm rel. rechts) Y=67.158mm B=5mm H=5mm -->
+        <div id="badge2" style="position:absolute; border-radius:0; display:flex; align-items:center; justify-content:center; font-family:'BioRhyme',serif; font-weight:700; color:#fff;">2</div>
+        <!-- "Log in met:" label -->
+        <div id="label2" style="position:absolute; font-family:'BioRhyme',serif; font-weight:700; color:#000000; display:flex; align-items:center; overflow:hidden;">Log in met:</div>
+        <!-- Logincode veld — Y=72.158mm B=53mm (50mm+3mm bleed) H=10mm -->
+        <div id="loginVeld" style="position:absolute; border-radius:0; display:flex; align-items:center; font-family:'Source Sans 3',sans-serif; font-weight:300; overflow:hidden;"></div>
+        <!-- Badge 3 — InDesign X=280mm (=0mm rel. rechts) Y=85.658mm B=5mm H=5mm -->
+        <div id="badge3" style="position:absolute; border-radius:0; display:flex; align-items:center; justify-content:center; font-family:'BioRhyme',serif; font-weight:700; color:#fff;">3</div>
+        <!-- "Voer wachtwoord in:" label -->
+        <div id="label3" style="position:absolute; font-family:'BioRhyme',serif; font-weight:700; color:#000000; display:flex; align-items:center; overflow:hidden;">Voer wachtwoord in:</div>
+        <!-- Wachtwoord veld — Y=90.658mm B=53mm (50mm+3mm bleed) H=10mm -->
+        <div id="wachtwoordVeld" style="position:absolute; border-radius:0; display:flex; align-items:center; font-family:'Source Sans 3',sans-serif; font-weight:300; overflow:hidden;"></div>
+        <div id="binnenArcRechtsWrap" style="position:absolute; bottom:0; left:0; right:0; pointer-events:none;"></div>
+      </div>
+
+    </div><!-- /spreadBinnen -->
+
+    </div><!-- /spreadOuter -->
+  </div><!-- /preview-wrap -->
+</main>
+
+<!-- ═══ ZOOM OVERLAY ══════════════════════════════════ -->
+<div class="zoom-bg" id="zoomBg" onclick="closeZoom(event)">
+  <button class="zoom-close" onclick="closeZoom()">✕</button>
+  <div class="zoom-inner" id="zoomInner"></div>
+</div>
+
+<script>
+// Export-modus via ?print=1 — verbergt UI, reset schaal
+if (new URLSearchParams(location.search).has('print')) {
+  document.body.classList.add('is-printing');
+}
+
+// ── BLINKERTJES SVG PRELOAD ──────────────────────────
+// Laad beide SVG-bestanden inline zodat ze vector blijven in de PDF.
+let _svgKleur = null, _svgWit = null;
+(async () => {
+  try {
+    const [rK, rW] = await Promise.all([
+      fetch('assets/svg/blinkertjes-kleur-vector.svg'),
+      fetch('assets/svg/blinkertjes-wit-vector.svg'),
+    ]);
+    const parse = (text, rewriteFill) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(
+        rewriteFill ? text.replace(/fill:#fff/g, 'fill:currentColor') : text,
+        'image/svg+xml'
+      );
+      const svg = doc.documentElement;
+      svg.setAttribute('width',  '100%');
+      svg.setAttribute('height', '100%');
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+      svg.style.cssText = 'position:absolute;inset:0;pointer-events:none;display:block;';
+      return svg;
+    };
+    _svgKleur = parse(await rK.text(), false);
+    _svgWit   = parse(await rW.text(), true);
+    // Herrender als de SVGs al nodig waren
+    if (typeof render === 'function') render();
+    if (typeof renderBinnen === 'function') renderBinnen();
+  } catch(e) { console.warn('Blinkertjes SVG laden mislukt:', e); }
+})();
+
+// ── CONFIG: PHYSICAL DIMENSIONS ─────────────────────
+const PX_PER_MM = 96 / 25.4;
+const bleedPx = 3 * PX_PER_MM; // 3mm bleed = 8.505px
+
+// Card dimensions in mm
+const DIM = {
+  rugW:   50,
+  midW:  140,
+  rightW:140,
+  h:     200,
+};
+
+// Scale factor (internal px = mm * PX_PER_MM)
+// We'll then CSS-scale the whole spread to fit
+const S = PX_PER_MM; // ~2.835 px/mm
+
+const W = {
+  rug:   DIM.rugW   * S,  // ~141.75
+  mid:   DIM.midW   * S,  // ~396.9
+  right: DIM.rightW * S,  // ~396.9
+  total: (DIM.rugW + DIM.midW + DIM.rightW) * S, // ~935.55
+  h:     DIM.h      * S,  // ~567
+};
+
+// Exposen op window zodat Puppeteer page.evaluate ze kan lezen
+window.W = W;
+window.bleedPx = bleedPx;
+window.S = S;
+window.gradTop = 115.98; // wordt bijgewerkt via setGradTop()
+
+// ── STATE ────────────────────────────────────────────
+const st = {
+  bgKleur:      '#f2cc7a',
+  blinkMode:    'kleur',
+  blinkOpacity: 0.6,
+  blinkKleur:   '#ffffff',
+  blinkModeRug: 'kleur',
+  cadeauKleur:  '#83b070',
+  cadeauTop:    '155px',
+  cadeauLeft:   '15.04px',
+  gradTop:      115.98,
+  naam:         '[naam]',
+  jbu:          true,
+  variant:      'standaard', // 'standaard' | 'foto'
+  logoSrc:      null,
+  fotoSrc:      null,
+  fotoScale:    1,
+  fotoOffX:     0,   // % verschuiving horizontaal
+  fotoOffY:     0,   // % verschuiving verticaal
+  fotoNatW:     0,   // natural image width (px)
+  fotoNatH:     0,   // natural image height (px)
+  // Binnenkant
+  binnenNaam:       '[naam]',
+  binnenUrl:        '',
+  binnenGeldig:     '',
+  binnenCode:       '',
+  binnenWachtwoord: '',
+  binnenHoofdKleur: '#8cb16f',
+  binnenKleur2:     '#76a5b8',
+  binnenKleur3:     '#f08889',
+  binnenKleurZoek:  '#f8f0e4',
+  binnenBoogKleur:         '#76a6b9',
+  binnenDisclaimerKleur:   'zwart',
+  binnenBriefGewicht: 300,
+  binnenIntroText: 'Met de feestdagen voor de deur willen we graag terugblikken op dit jaar. We weten dat het niet altijd makkelijk is geweest en willen jouw inzet niet voor lief nemen. Zeker in deze tijd, waarin we goed personeel en mensen die hart voor de zaak hebben steeds meer gaan waarderen, vinden we het belangrijk om dit ook daadwerkelijk naar jou te uiten.',
+  binnenBodyText:  'Het afgelopen jaar hebben we weer als team maar ook zeker jij als individu laten zien dat we uitblinken in ons werk en waar we voor staan. Dat is zeker niet vanzelfsprekend en daarom hebben wij ervoor gekozen om jouw Blinkers cadeau te doen, het cadeau voor uitblinkers! Wij zien en waarderen jou en willen hier graag iets voor terugdoen.\n\nWe zijn trots waar we nu samen staan, mede dankzij jou, en hopen dat je deze uitdagingen met ons aan wilt blijven gaan. Geniet eerst van de feestdagen en zoek iets leuks uit voor jezelf en/of iemand anders. Fijne feestdagen voor jou en je dierbaren.',
+  binnenSlotText:  'Met hartelijke kerstgroeten,\nDirectie',
+};
+window.st = st; // expose for Puppeteer PDF export
+
+// ── INIT DIMENSIONS ─────────────────────────────────
+function initDim() {
+  const spread = document.getElementById('spread');
+  spread.style.height = W.h + 'px';
+  spread.style.width  = W.total + 'px';
+
+  setSize('panelRug',   W.rug,   W.h);
+  setSize('panelMid',   W.mid,   W.h);
+  setSize('panelRight', W.right, W.h);
+
+  layoutElements();
+  layoutBinnenElements();
+  scaleSpread();
+}
+
+function setSize(id, w, h) {
+  const el = document.getElementById(id);
+  el.style.width  = w + 'px';
+  el.style.height = h + 'px';
+}
+
+function layoutElements() {
+  const h = W.h;
+
+  // "cadeau!" — horizontal, exact PDF position
+  // InDesign: bovenkant '!' op 42mm van kaartbovenkant, x=6.5px (≈2.3mm) van rug-links
+  const ct = document.getElementById('cadeauTxt');
+  ct.style.fontSize  = '40px';
+  ct.style.left      = st.cadeauLeft;
+  ct.style.top       = st.cadeauTop;
+  ct.style.transform = 'none';
+
+  // Adressering box — exact PDF position
+  // Measured: x=23.8px from mid-left, y=213.5px from card-top, w=335px, h=139px
+  const ab = document.getElementById('adresBox');
+  ab.style.left   = ((W.mid - 110 * S) / 2) + 'px';
+  ab.style.top    = ((W.h  -  50 * S) / 2) + 'px';
+  ab.style.width  = (110 * S) + 'px'; // 110mm
+  ab.style.height = (50  * S) + 'px'; // 50mm
+
+  // Inner dashed box: 90% × 80%, centered within adresBox
+  const abW = 110 * S, abH = 50 * S;
+  const aiW = abW * 0.90;
+  const aiH = abH * 0.80;
+  const ai = document.getElementById('adresInner');
+  ai.style.width  = aiW + 'px';
+  ai.style.height = aiH + 'px';
+  ai.style.left   = ((abW - aiW) / 2) + 'px';
+  ai.style.top    = ((abH - aiH) / 2) + 'px';
+  document.getElementById('adresTxt').style.fontSize = Math.round(3.5 * S) + 'px';
+
+  // "jij blinkt uit [naam]" block — exact PDF position
+  // Measured: block center_x=185.9px in right panel, top=205.5px, w=232px, h≈95px
+  const jbW = Math.round(W.right * 0.82); // ~82% van panelbreedte
+  const jb = document.getElementById('jbuBlock');
+  jb.style.width = jbW + 'px';
+  jb.style.left  = ((W.right - jbW) / 2 - 3.78) + 'px';
+  jb.style.top   = '275.89px';
+  document.getElementById('jbuLine').style.fontSize = '42.67px';
+  document.getElementById('naamLine').style.fontSize = '42.67px';
+
+  // Witte ronde hoek — anchored bottom-right, overflow:hidden clips wat buiten valt
+  const hwW = 84 * S; // 84mm exact uit InDesign
+  const hwH = 56 * S; // 56mm exact uit InDesign
+  const wh = document.getElementById('witteHoek');
+  wh.style.width  = hwW + 'px';
+  wh.style.height = hwH + 'px';
+
+  // Logo placeholder: 45×16mm exact uit InDesign
+  const lbW = Math.round(45 * S);
+  const lbH = Math.round(16 * S);
+  const lb = document.getElementById('logoBox');
+  lb.style.width  = lbW + 'px';
+  lb.style.height = lbH + 'px';
+  lb.style.right  = ((84 * S - lbW) / 2 - 4 * S) + 'px';
+  lb.style.bottom = ((56 * S - lbH) / 2 - 4 * S + 10 * S) + 'px';
+  applyLogoToBox();
+
+  // Header area (foto variant): positie = -bleedPx zodat het incl. bleed correct staat
+  // SVG viewBox oorspronkelijk 405.69 × 197.72 bij 72dpi; schalen naar huidige PX_PER_MM
+  const ha = document.getElementById('headerArea');
+  const _hsc = PX_PER_MM * 25.4 / 72; // schaalfactor t.o.v. originele SVG-coördinaten
+  // Header moet breed genoeg zijn voor panel + bleed aan beide zijden
+  const _haW = W.right + 2 * bleedPx;
+  const _haWSvg = _haW / _hsc; // benodigde breedte in SVG-eenheden
+  ha.style.left   = (-bleedPx) + 'px';
+  ha.style.top    = (-bleedPx) + 'px';
+  ha.style.width  = _haW + 'px';
+  ha.style.height = (197.72 * _hsc) + 'px';
+  // Curve eindigt op (405.69, 153.88); laatste controlpunt was (312.44, 179.98)
+  // Tangens op eindpunt: richting (405.69-312.44, 153.88-179.98) = (93.25, -26.10)
+  // → hellingshoek: -26.10/93.25 per SVG-eenheid
+  // Verleng de curve in dezelfde hoek naar de bleed-rand
+  const _curveEndX = 405.69, _curveEndY = 153.88;
+  const _slope = -26.10 / 93.25;
+  const _extraX = _haWSvg - _curveEndX;
+  const _rightY = (_curveEndY + _slope * _extraX).toFixed(2);
+  const _origPath = `M0,0v196.99c15.51.48,31.44.73,47.8.73,138.66,0,264.64-17.74,357.89-43.84L${_haWSvg.toFixed(2)},${_rightY}V0H0Z`;
+  const _scaledPath = _origPath.replace(/-?[0-9]*\.?[0-9]+/g, n => (parseFloat(n) * _hsc).toFixed(2));
+  ha.style.clipPath = 'path("' + _scaledPath + '")';
+}
+
+function scaleSpread() {
+  if (document.body.classList.contains('is-printing')) return;
+  const wrap = document.getElementById('previewWrap');
+  const avW = wrap.clientWidth  - 80;
+  const avH = wrap.clientHeight - 80;
+  const bleedOn = document.getElementById('bleedToggle').checked;
+  const totalW = bleedOn ? W.total + 2 * bleedPx : W.total;
+  const totalH = bleedOn ? W.h    + 2 * bleedPx : W.h;
+  const scale = Math.min(avW / totalW, avH / totalH);
+  document.getElementById('spreadOuter').style.transform = `scale(${scale})`;
+}
+
+// ── GRADIENT POSITIONERING ────────────────────────────
+
+function applyGradBackground() {
+  const stop = st.gradTop.toFixed(2);
+  const gradCss = `linear-gradient(to bottom, transparent ${stop}px, #fff ${stop}px, transparent 100%)`;
+  const grad = document.getElementById('cadeauGrad');
+  if (grad) grad.style.background = gradCss;
+  const gm = document.getElementById('binnenGradMid');
+  if (gm) gm.style.background = gradCss;
+  const gr = document.getElementById('binnenGradRechts');
+  if (gr) gr.style.background = gradCss;
+}
+
+function setGradTop(v) {
+  st.gradTop = Math.max(0, Math.min(W.h - 10, v));
+  window.gradTop = st.gradTop;
+  applyGradBackground();
+  saveState();
+}
+
+
+
+// ── HULPLIJN ─────────────────────────────────────────
+let guideActive = false;
+let guidePx = 200; // startpositie in panel-coords
+
+function updateGuide() {
+  const gl = document.getElementById('guideLine');
+  if (!gl) return;
+  gl.style.top = guidePx + 'px';
+  const mm = (guidePx / S).toFixed(1);
+  document.getElementById('guideTip').textContent = mm + ' mm';
+}
+
+function toggleGuide(on) {
+  guideActive = on;
+  const gl = document.getElementById('guideLine');
+  if (!gl) return;
+  gl.style.display = on ? 'block' : 'none';
+  if (on) { updateGuide(); }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (!guideActive) return;
+  const step = e.shiftKey ? 5 * S : S; // 5mm of 1mm
+  if (e.key === 'ArrowUp')   { e.preventDefault(); guidePx = Math.max(0, guidePx - step); updateGuide(); }
+  if (e.key === 'ArrowDown') { e.preventDefault(); guidePx = Math.min(W.h, guidePx + step); updateGuide(); }
+}, true); // capture phase zodat hulplijn altijd reageert
+
+function toggleBleed(on) {
+  const bp = bleedPx;
+  const bg  = document.getElementById('bleedBg');
+  const svg = document.getElementById('cropSvg');
+
+  if (on) {
+    // bleed background: full extended rect
+    const bw = W.total + 2 * bp;
+    const bh = W.h    + 2 * bp;
+    bg.style.cssText += `
+      left:${-bp}px; top:${-bp}px;
+      width:${bw}px; height:${bh}px;
+      background:${st.bgKleur};
+    `;
+    // Witte achtergrond rug (volledig solide wit, dekt alle bleed-zijden)
+    bg.innerHTML = `
+      <div style="position:absolute;left:0;top:0;height:100%;width:${bp + W.rug}px;background:#fff;"></div>
+    `;
+    // PanelRug naar links uitbreiden zodat gradient de bleed invult;
+    // overflow:hidden blijft intact zodat blinkertjes netjes geclipped worden.
+    const rugEl = document.getElementById('panelRug');
+    rugEl.style.marginLeft = '-' + bp + 'px';
+    rugEl.style.width      = (W.rug + bp) + 'px';
+    // Gradient reset (positie komt uit st.gradTop via applyGradBackground)
+    const grad = document.getElementById('cadeauGrad');
+    if (grad) {
+      grad.style.left = ''; grad.style.top = ''; grad.style.right = ''; grad.style.bottom = '';
+      applyGradBackground();
+    }
+    bg.style.display = 'block';
+
+    // BinnenRechts: logincode veld loopt 3mm bleed door rechts
+    const brEl = document.getElementById('binnenRechts');
+    brEl.style.overflow = 'visible';
+    document.getElementById('blinkBinnenRechts').style.overflow = 'hidden';
+
+    // PanelRight naar rechts uitbreiden; blinkertjes apart clippen zodat
+    // ze stoppen bij de bleed-grens maar witteHoek wel doorloopt.
+    const rightEl = document.getElementById('panelRight');
+    rightEl.style.width    = (W.right + bp) + 'px';
+    rightEl.style.overflow = 'visible'; // nodig voor witteHoek onderaan
+    document.getElementById('blinkRight').style.overflow = 'hidden';
+    const wh = document.getElementById('witteHoek');
+    wh.style.width  = (84 * S + bp) + 'px';
+    wh.style.height = (56 * S + bp) + 'px';
+    wh.style.right  = (-bp) + 'px';
+    wh.style.bottom = (-bp) + 'px';
+
+    // crop marks at trim corners (gap 2mm, length 5mm)
+    const gap = 2 * S, len = 5 * S, sw = 0.5;
+    const corners = [
+      // top-left
+      `M${bp-gap},${bp} h-${len}  M${bp},${bp-gap} v-${len}`,
+      // top-right
+      `M${bp+W.total+gap},${bp} h${len}  M${bp+W.total},${bp-gap} v-${len}`,
+      // bottom-left
+      `M${bp-gap},${bp+W.h} h-${len}  M${bp},${bp+W.h+gap} v${len}`,
+      // bottom-right
+      `M${bp+W.total+gap},${bp+W.h} h${len}  M${bp+W.total},${bp+W.h+gap} v${len}`,
+    ].join(' ');
+    svg.setAttribute('viewBox', `0 0 ${bw} ${bh}`);
+    svg.style.width  = bw + 'px';
+    svg.style.height = bh + 'px';
+    svg.style.left   = (-bp) + 'px';
+    svg.style.top    = (-bp) + 'px';
+    svg.innerHTML = `<path d="${corners}" stroke="#000" stroke-width="${sw}" fill="none"/>`;
+    svg.style.display = 'block';
+  } else {
+    bg.style.display  = 'none';
+    svg.style.display = 'none';
+    // BinnenRechts bleed terugzetten
+    const brEl = document.getElementById('binnenRechts');
+    brEl.style.overflow = '';
+    document.getElementById('blinkBinnenRechts').style.overflow = '';
+
+    // PanelRight en blinkRight terugzetten; witte hoek resetten
+    const rightEl = document.getElementById('panelRight');
+    rightEl.style.width    = '';
+    rightEl.style.overflow = 'hidden';
+    document.getElementById('blinkRight').style.overflow = '';
+    const wh = document.getElementById('witteHoek');
+    wh.style.width  = (84 * S) + 'px';
+    wh.style.height = (56 * S) + 'px';
+    wh.style.right  = '0';
+    wh.style.bottom = '0';
+    // PanelRug breedte en marge terugzetten
+    const rugEl = document.getElementById('panelRug');
+    rugEl.style.marginLeft = '';
+    rugEl.style.width      = '';
+    const grad = document.getElementById('cadeauGrad');
+    if (grad) {
+      grad.style.left = ''; grad.style.top = ''; grad.style.right = ''; grad.style.bottom = '';
+      applyGradBackground();
+    }
+  }
+  scaleSpread();
+}
+
+window.addEventListener('resize', scaleSpread);
+
+// ── BINNENKANT LAYOUT & RENDER ───────────────────────
+
+function lightenHex(hex, factor) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return '#' + [r,g,b].map(c => Math.round(c + (255-c)*factor).toString(16).padStart(2,'0')).join('');
+}
+
+function buildArc(wrapId, w, h, pathD, color) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.style.cssText = `display:block; width:100%; height:${h}px;`;
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', pathD);
+  path.setAttribute('fill', color);
+  path.setAttribute('class', 'binnenArcPath');
+  svg.appendChild(path);
+  wrap.appendChild(svg);
+  wrap.style.height = h + 'px';
+}
+
+function layoutBinnenElements() {
+  // Boog: InDesign 367×83mm, X=-17.75mm, Y=155.667mm vanuit linkerbovenhoek kaart
+  const arcMmY     = 152.667;
+  const arcVisH    = Math.round((200 - arcMmY) * S); // zichtbare booghoogte in px (44.333mm)
+  const arcCropSvgH = (200 - arcMmY) / 83 * 235.28;  // SVG-eenheden zichtbaar (125.7)
+  const arcSvgScale = 1040.31 / 367;                  // SVG/mm
+  const arcOffMm    = 17.75;                           // linker offset van arc t.o.v. kaartrand
+
+  const pad    = Math.round(7  * S);
+  const padTop = Math.round(12 * S);
+
+  // Panel sizes
+  const sb = document.getElementById('spreadBinnen');
+  sb.style.width  = W.total + 'px';
+  sb.style.height = W.h     + 'px';
+  setSize('binnenLinks',  W.right, W.h);
+  setSize('binnenMidden', W.mid,   W.h);
+  setSize('binnenRechts', W.rug,   W.h);
+
+  applyGradBackground();
+
+  // ── Brief (left panel) — InDesign X=14mm Y=39mm B=114mm H=118mm ──
+  const bw = document.getElementById('binnenBriefWrap');
+  bw.style.left   = Math.round(17   * S) + 'px';
+  bw.style.top    = Math.round(32.8 * S) + 'px';
+  bw.style.width  = Math.round(110  * S) + 'px';
+  bw.style.height = Math.round(124  * S) + 'px';
+  bw.style.right  = '';
+  bw.style.bottom = '';
+
+  const aanhef = document.getElementById('binnenAanhef');
+  aanhef.style.fontSize     = Math.round(3.8 * S) + 'px';
+  aanhef.style.marginBottom = Math.round(5.6 * S) + 'px';
+
+  const bodyFs = Math.round(3.528 * S) + 'px'; // 10pt
+  const bodyLh = '1.4';                         // 14pt/10pt
+  const bodyMb = Math.round(5 * S) + 'px';
+  ['binnenIntroBold','binnenBody1','binnenSlot'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.fontSize     = bodyFs;
+    el.style.lineHeight   = bodyLh;
+    el.style.marginBottom = bodyMb;
+  });
+
+  // Logo: exacte InDesign-positie X=107.526mm Y=166mm B=21.474mm H=10.583mm
+  const logo = document.getElementById('binnenBlinkLogo');
+  logo.style.left      = Math.round(110.526 * S) + 'px';
+  logo.style.top       = Math.round(169 * S) + 'px';
+  logo.style.width     = Math.round(21.474 * S) + 'px';
+  logo.style.height    = Math.round(10.583 * S) + 'px';
+  logo.style.bottom    = '';
+  logo.style.transform = '';
+
+  // ── Mid panel: heading, subtitle, pijl ──────────────
+  // Verzilver je cadeau! — InDesign X=154mm (=14mm rel. midden) Y=42mm B=108mm H=10.55mm
+  const vt = document.getElementById('verzilverTxt');
+  vt.style.left   = Math.round(24    * S) + 'px';
+  vt.style.top    = (Math.round(42    * S) + 5) + 'px';
+  vt.style.width  = Math.round(108   * S) + 'px';
+  vt.style.height = Math.round(10.55 * S) + 'px';
+  vt.style.right  = '';
+  vt.style.fontSize   = Math.round(30 * 96/72) + 'px'; // 30pt
+  vt.style.whiteSpace = 'nowrap';
+
+  // Subtitel — InDesign X=154mm (=14mm rel. midden) Y=58mm B=37.746mm H=7.87mm
+  const vs = document.getElementById('verzilverSub');
+  vs.style.left   = Math.round(14     * S) + 'px';
+  vs.style.top    = Math.round(59.7   * S) + 'px';
+  vs.style.width  = Math.round(37.746 * S) + 'px';
+  vs.style.height = Math.round(7.87   * S) + 'px';
+  vs.style.right  = '';
+  vs.style.fontSize  = Math.round(10 * 96/72) + 'px'; // 10pt
+  vs.style.fontWeight = '300';
+
+  // Pijl — InDesign X=198mm (=58mm rel. midden) Y=63mm B=17mm H=19.132mm rot=77°
+  const pijl = document.getElementById('binnenPijl');
+  pijl.style.left      = Math.round(58     * S) + 'px';
+  pijl.style.top       = Math.round(67.3   * S) + 'px';
+  pijl.style.width     = Math.round(17     * S) + 'px';
+  pijl.style.height    = Math.round(19.132 * S) + 'px';
+  pijl.style.transform = '';
+  pijl.style.transformOrigin = '';
+
+  // ── Instructieblokken (nieuw) ────────────────────────
+  // Badge 1 — InDesign X=220.1mm (=80.1mm rel.) Y=67.137mm B=5mm H=5mm
+  const b1 = document.getElementById('badge1');
+  if (b1) {
+    const bSz = Math.round(5 * S);
+    b1.style.left     = Math.round(80.1   * S) + 'px';
+    b1.style.top      = Math.round(70.437 * S) + 'px';
+    b1.style.width    = bSz + 'px';
+    b1.style.height   = bSz + 'px';
+    b1.style.fontSize = Math.round(9 * 96/72) + 'px'; // 9pt
+  }
+
+  // "Log in met:" label
+  const l2 = document.getElementById('label2');
+  if (l2) {
+    l2.style.left     = Math.round(6.9 * S) + 'px';
+    l2.style.top      = Math.round(70.458 * S) + 'px';
+    l2.style.width    = Math.round(25 * S) + 'px';
+    l2.style.height   = Math.round(5 * S) + 'px';
+    l2.style.fontSize = Math.round(9 * 96/72) + 'px'; // 9pt
+  }
+
+  // Badge 2 — InDesign X=280mm (=0mm rel. rechts) Y=67.158mm B=5mm H=5mm
+  const b2 = document.getElementById('badge2');
+  if (b2) {
+    const bSz = Math.round(5 * S);
+    b2.style.left     = '0px';
+    b2.style.top      = Math.round(70.458 * S) + 'px';
+    b2.style.width    = bSz + 'px';
+    b2.style.height   = bSz + 'px';
+    b2.style.fontSize = Math.round(9 * 96/72) + 'px'; // 9pt
+  }
+
+  // Logincode veld — Y=72.158mm B=53mm (50mm+3mm bleed) H=10mm
+  const lv = document.getElementById('loginVeld');
+  if (lv) {
+    lv.style.left        = '0px';
+    lv.style.top         = Math.round(75.458 * S) + 'px';
+    lv.style.width       = Math.round(53     * S) + 'px'; // 50mm + 3mm bleed
+    lv.style.height      = Math.round(10     * S) + 'px';
+    lv.style.fontSize    = Math.round(10 * 96/72) + 'px'; // 10pt
+    lv.style.paddingLeft = Math.round(3 * S) + 'px';
+  }
+
+  // Badge 3 — InDesign X=280mm (=0mm rel. rechts) Y=85.658mm B=5mm H=5mm
+  const b3 = document.getElementById('badge3');
+  if (b3) {
+    const bSz = Math.round(5 * S);
+    b3.style.left     = '0px';
+    b3.style.top      = Math.round(88.958 * S) + 'px';
+    b3.style.width    = bSz + 'px';
+    b3.style.height   = bSz + 'px';
+    b3.style.fontSize = Math.round(9 * 96/72) + 'px'; // 9pt
+  }
+
+  // "Voer wachtwoord in:" label — zelfde Y als badge3
+  const l3 = document.getElementById('label3');
+  if (l3) {
+    l3.style.left     = Math.round(6.9  * S) + 'px';
+    l3.style.top      = Math.round(88.958 * S) + 'px';
+    l3.style.width    = Math.round(40   * S) + 'px'; // breder voor langere tekst
+    l3.style.height   = Math.round(5    * S) + 'px';
+    l3.style.fontSize = Math.round(9 * 96/72) + 'px'; // 9pt
+  }
+
+  // Wachtwoord veld — Y=90.658mm B=53mm (50mm+3mm bleed) H=10mm
+  const wv = document.getElementById('wachtwoordVeld');
+  if (wv) {
+    wv.style.left        = '0px';
+    wv.style.top         = Math.round(93.958 * S) + 'px';
+    wv.style.width       = Math.round(53     * S) + 'px'; // 50mm + 3mm bleed
+    wv.style.height      = Math.round(10     * S) + 'px';
+    wv.style.fontSize    = Math.round(10 * 96/72) + 'px'; // 10pt
+    wv.style.paddingLeft = Math.round(3  * S) + 'px';
+  }
+
+  // "Ga naar:" label — InDesign X=227mm (=87mm rel.) Y=67mm B=17mm H=5mm
+  const l1 = document.getElementById('label1');
+  if (l1) {
+    l1.style.left     = Math.round(87 * S) + 'px';
+    l1.style.top      = Math.round(70.3 * S) + 'px';
+    l1.style.width    = Math.round(17 * S) + 'px';
+    l1.style.height   = Math.round(5  * S) + 'px';
+    l1.style.fontSize = Math.round(9 * 96/72) + 'px'; // 9pt
+  }
+
+  // URL veld — InDesign X=220.1mm (=80.1mm rel.) Y=72.137mm B=59.9mm H=10mm
+  const uv = document.getElementById('urlVeld');
+  if (uv) {
+    uv.style.left     = Math.round(80.1   * S) + 'px';
+    uv.style.top      = Math.round(75.437 * S) + 'px';
+    uv.style.width    = Math.round(59.9   * S) + 'px';
+    uv.style.height   = Math.round(10     * S) + 'px';
+    uv.style.fontSize = Math.round(10 * 96/72) + 'px'; // 10pt
+    uv.style.paddingLeft = Math.round(3 * S) + 'px';
+  }
+
+  // "Zoek jouw cadeau uit" heading — volle breedte binnenMidden (Y=82.5mm)
+  const zh = document.getElementById('zoekHeading');
+  if (zh) {
+    zh.style.left     = Math.round(80.1   * S) + 'px'; // zelfde als geldigVeld
+    zh.style.top      = Math.round(88.825 * S) + 'px'; // 0.137mm boven geldigVeld (= zelfde gap als Ga naar/urlVeld)
+    zh.style.width    = Math.round(59.9   * S) + 'px'; // zelfde als geldigVeld
+    zh.style.height   = Math.round(5     * S) + 'px';  // zelfde hoogte als Ga naar label
+    zh.style.fontSize = Math.round(9 * 96/72) + 'px'; // 9pt (zelfde als labels)
+  }
+
+  // Geldigheid veld — InDesign X=220.1mm (=80.1mm rel.) Y=90.662mm B=59.9mm H=10mm
+  const gv = document.getElementById('geldigVeld');
+  if (gv) {
+    gv.style.left        = Math.round(80.1   * S) + 'px';
+    gv.style.top         = Math.round(93.962 * S) + 'px';
+    gv.style.width       = Math.round(59.9   * S) + 'px';
+    gv.style.height      = Math.round(10     * S) + 'px';
+    gv.style.fontSize    = Math.round(10 * 96/72) + 'px'; // 10pt
+    gv.style.paddingLeft = Math.round(3 * S) + 'px';
+  }
+
+  // Disclaimer — InDesign X=154mm (=14mm rel. midden) Y=170mm B=114mm H=9mm
+  const disc = document.getElementById('binnenDisclaimer');
+  disc.style.left   = Math.round(14  * S) + 'px';
+  disc.style.top    = Math.round(173 * S) + 'px';
+  disc.style.width  = Math.round(114 * S) + 'px';
+  disc.style.height = Math.round(9   * S) + 'px';
+  disc.style.right  = '';
+  disc.style.bottom = '';
+  disc.style.fontSize   = Math.round(7 * 96/72) + 'px'; // 7pt
+  disc.style.lineHeight = (9/7).toFixed(3);              // 9pt leading
+  disc.style.fontWeight = '400';
+  disc.style.overflow   = 'hidden';
+
+  // ── Boog: exacte InDesign-SVG, per paneel uitgesneden via viewBox ──────────
+  const boogD = 'M1040.31,136.79C1040.31,71.82,807.43,0,520.16,0S0,71.82,0,136.79v98.49h1040.31v-98.49,98.49';
+
+  // x-start en x-breedte (SVG-eenheden) voor elk paneel
+  const lxS = arcOffMm             * arcSvgScale;  // links:   offset arcrand→kaartrand
+  const lxW = (W.right / S)        * arcSvgScale;  // 140mm
+  const mxS = lxS + lxW;
+  const mxW = (W.mid   / S)        * arcSvgScale;  // 140mm
+  const rxS = mxS + mxW;
+  const rxW = (W.rug   / S)        * arcSvgScale;  //  50mm
+
+  function setBoog(wrapId, vbX, vbW) {
+    const el = document.getElementById(wrapId);
+    if (!el) return;
+    el.style.height = arcVisH + 'px';
+    el.innerHTML = `<svg viewBox="${vbX.toFixed(2)} 0 ${vbW.toFixed(2)} ${arcCropSvgH.toFixed(2)}"
+      preserveAspectRatio="none" style="display:block;width:100%;height:100%;">
+      <path d="${boogD}" fill="${st.binnenBoogKleur}" class="binnenBoogPath"/></svg>`;
+  }
+
+  setBoog('binnenArcLinksWrap',  lxS, lxW);
+  setBoog('binnenArcMidWrap',    mxS, mxW);
+  setBoog('binnenArcRechtsWrap', rxS, rxW);
+}
+
+function renderBinnen() {
+  // Panel left achtergrond = bgKleur
+  document.getElementById('binnenLinks').style.background = st.bgKleur;
+
+  // Blinkertjes midden + rechts
+  setBlinkEl(document.getElementById('blinkBinnenMid'),    st.blinkMode, st.blinkOpacity, st.blinkKleur);
+  setBlinkEl(document.getElementById('blinkBinnenRechts'), st.blinkMode, st.blinkOpacity, st.blinkKleur);
+  // blinkBinnenMid: natuurlijke breedte (140mm), inset:0 herstellen
+  const _blinkMidW   = Math.round(140 * S);
+  const _blinkRechtsW = Math.round(50 * S); // binnenRechts breedte
+  const _bmEl = document.getElementById('blinkBinnenMid');
+  _bmEl.style.left  = '0';
+  _bmEl.style.width = _blinkMidW + 'px';
+  _bmEl.style.right = '';
+  // blinkBinnenRechts: zelfde breedte (140mm), left=0 → toont x=0-50mm van de seamless tile
+  // = naadloze voortzetting van blinkBinnenMid dat eindigt op x=140mm.
+  const _brEl = document.getElementById('blinkBinnenRechts');
+  _brEl.style.left  = '0';
+  _brEl.style.width = _blinkMidW + 'px';
+  _brEl.style.right = '';
+
+  // Aanhef
+  const aanhef = document.getElementById('binnenAanhef');
+  aanhef.textContent = 'Beste ' + st.binnenNaam + ',';
+  aanhef.style.color = '#000000';
+
+  // Heading + pijl kleur
+  const vt = document.getElementById('verzilverTxt');
+  vt.textContent = 'Verzilver je cadeau!';
+  vt.style.color = st.binnenHoofdKleur;
+  document.getElementById('binnenPijlPath').setAttribute('fill', st.binnenHoofdKleur);
+
+  // Badge + veld kleuren
+  const _b1 = document.getElementById('badge1');
+  if (_b1) _b1.style.background = st.binnenHoofdKleur;
+  const _l1 = document.getElementById('label1');
+  if (_l1) _l1.style.color = '#000000';
+  const _b2 = document.getElementById('badge2');
+  if (_b2) _b2.style.background = st.binnenKleur2;
+  const _uv = document.getElementById('urlVeld');
+  if (_uv) {
+    _uv.style.background = lightenHex(st.binnenHoofdKleur, 0.75); // 25% tint
+    _uv.textContent = st.binnenUrl;
+  }
+  const _lv = document.getElementById('loginVeld');
+  if (_lv) {
+    _lv.style.background = lightenHex(st.binnenKleur2, 0.75); // 25% tint blauw
+    _lv.textContent = st.binnenCode;
+  }
+  const _b3 = document.getElementById('badge3');
+  if (_b3) _b3.style.background = st.binnenKleur3;
+  const _wv = document.getElementById('wachtwoordVeld');
+  if (_wv) {
+    _wv.style.background = lightenHex(st.binnenKleur3, 0.75); // 25% tint salmon
+    _wv.textContent = st.binnenWachtwoord;
+  }
+
+  // Brief tekst + gewichten
+  const _intro = document.getElementById('binnenIntroBold');
+  if (_intro) { _intro.textContent = st.binnenIntroText; _intro.style.fontWeight = 600; }
+  const _body = document.getElementById('binnenBody1');
+  if (_body)  { _body.textContent  = st.binnenBodyText;  _body.style.fontWeight  = st.binnenBriefGewicht; }
+  const _slot = document.getElementById('binnenSlot');
+  if (_slot)  { _slot.textContent  = st.binnenSlotText;  _slot.style.fontWeight  = st.binnenBriefGewicht; }
+
+
+  // Geldigheid veld
+  const _gv = document.getElementById('geldigVeld');
+  if (_gv) {
+    _gv.style.background = st.binnenKleurZoek;
+    _gv.textContent = st.binnenGeldig;
+  }
+
+  // Disclaimer kleur
+  const _disc = document.getElementById('binnenDisclaimer');
+  if (_disc) _disc.style.color = st.binnenDisclaimerKleur === 'wit' ? 'rgba(255,255,255,0.85)' : '#000000';
+
+  // Boog kleur
+  document.querySelectorAll('.binnenBoogPath').forEach(p => p.setAttribute('fill', st.binnenBoogKleur));
+
+  saveState();
+}
+
+// ── LOCALSTORAGE PERSISTENCE ─────────────────────────
+const LS_KEY = 'cadeaukaart_v1';
+
+function saveState() {
+  if (document.body.classList.contains('is-printing')) return;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(st));
+  } catch(e) {
+    // Quota exceeded door grote afbeeldingen: sla op zonder fotoSrc/logoSrc
+    const slim = Object.assign({}, st, { fotoSrc: null, logoSrc: null });
+    try { localStorage.setItem(LS_KEY, JSON.stringify(slim)); } catch(e2) {}
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    Object.assign(st, JSON.parse(raw));
+    window.gradTop = st.gradTop;
+  } catch(e) {}
+}
+
+function syncUI() {
+  // Radio buttons
+  document.querySelectorAll('input[name="blink"]').forEach(r => r.checked = r.value === st.blinkMode);
+  document.querySelectorAll('input[name="blinkRug"]').forEach(r => r.checked = r.value === st.blinkModeRug);
+  document.querySelectorAll('input[name="variant"]').forEach(r => r.checked = r.value === st.variant);
+  // Opacity slider
+  const opR = document.getElementById('opacityRange');
+  if (opR) {
+    opR.value = Math.round(st.blinkOpacity * 100);
+    document.getElementById('opacityVal').textContent = opR.value + '%';
+  }
+  document.getElementById('opacityCtrl')?.classList.toggle('hidden', st.blinkMode !== 'wit');
+  // Foto controls
+  document.getElementById('fotoUploadCtrl')?.classList.toggle('hidden', st.variant !== 'foto');
+  const fsSlider = document.getElementById('fotoScaleSlider');
+  if (fsSlider) { fsSlider.value = Math.round(st.fotoScale * 100); document.getElementById('fotoScaleVal').textContent = Math.round(st.fotoScale * 100) + '%'; }
+  document.getElementById('fotoOffXSlider').value = st.fotoOffX;
+  document.getElementById('fotoOffYSlider').value = st.fotoOffY;
+  // Naam + jbu toggle
+  document.getElementById('naamInput').value = st.naam;
+  document.getElementById('jbuToggle').checked = st.jbu;
+  applyGradBackground();
+  // Binnenkant velden
+  const _bnI = document.getElementById('binnenNaamInput');      if (_bnI) _bnI.value = st.binnenNaam;
+  const _buI = document.getElementById('binnenUrlInput');       if (_buI) _buI.value = st.binnenUrl;
+  const _bgI = document.getElementById('binnenGeldigInput');    if (_bgI) _bgI.value = st.binnenGeldig;
+  const _bcI = document.getElementById('binnenCodeInput');      if (_bcI) _bcI.value = st.binnenCode;
+  const _bwI = document.getElementById('binnenWachtwoordInput'); if (_bwI) _bwI.value = st.binnenWachtwoord;
+  document.querySelectorAll('input[name="briefGewicht"]').forEach(r => r.checked = +r.value === st.binnenBriefGewicht);
+  document.querySelectorAll('input[name="disclaimerKleur"]').forEach(r => r.checked = r.value === st.binnenDisclaimerKleur);
+  const _ii = document.getElementById('binnenIntroInput'); if (_ii) _ii.value = st.binnenIntroText;
+  const _bi = document.getElementById('binnenBodyInput');  if (_bi) _bi.value = st.binnenBodyText;
+  const _si = document.getElementById('binnenSlotInput');  if (_si) _si.value = st.binnenSlotText;
+
+  // Logo sidebar: bestandsnaam is na refresh onbekend, toon generieke tekst
+  if (st.logoSrc) {
+    document.getElementById('logoFilename').textContent = 'logo geladen';
+    document.getElementById('logoRemove').style.display = 'inline-flex';
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────
+function render() {
+  const isFoto = st.variant === 'foto';
+
+  // Background
+  document.getElementById('panelMid').style.backgroundColor   = st.bgKleur;
+  document.getElementById('panelRight').style.backgroundColor = st.bgKleur;
+
+  // Blinkertjes mid
+  setBlinkEl(document.getElementById('blinkMid'), st.blinkMode, st.blinkOpacity, st.blinkKleur);
+
+  // Blinkertjes rug (aparte instelling)
+  setBlinkEl(document.getElementById('blinkRug'), st.blinkModeRug, st.blinkOpacity, st.blinkKleur);
+  // blinkRug op 140mm schaal positioneren zodat het patroon seamless aansluit op blinkMid.
+  // panelRug is links van panelMid → toont de laatste 50mm van de tile (x=90-140mm).
+  const _rugEl = document.getElementById('blinkRug');
+  _rugEl.style.left  = '-' + Math.round(90 * S) + 'px';
+  _rugEl.style.width = Math.round(140 * S) + 'px';
+  _rugEl.style.right = '';
+
+  // Standaard vs foto variant op panelRight
+  const blinkRight  = document.getElementById('blinkRight');
+  const fotoLayer   = document.getElementById('fotoLayer');
+  const headerArea  = document.getElementById('headerArea');
+  const headerBg    = document.getElementById('headerBg');
+  const blinkHeader = document.getElementById('blinkHeader');
+  const jb          = document.getElementById('jbuBlock');
+
+  if (isFoto) {
+    blinkRight.style.display = 'none';
+    fotoLayer.style.display  = 'block';
+    headerArea.style.display = 'block';
+    fotoLayer.style.backgroundImage = st.fotoSrc ? `url('${st.fotoSrc}')` : 'none';
+    fotoLayer.style.backgroundColor = st.fotoSrc ? 'transparent' : '#ccc';
+    fotoLayer.style.transform = 'none';
+    // Stel backgroundSize in zodat de foto altijd 50% groter is dan de container
+    // in de beperkende richting, zodat background-position in beide assen kan schuiven.
+    // containerRatio = 140/200 = 0.7 (vaste kaartmaat).
+    {
+      const EXTRA = 1.5 * st.fotoScale;
+      const natR  = (st.fotoNatW && st.fotoNatH) ? st.fotoNatW / st.fotoNatH : 1;
+      fotoLayer.style.backgroundSize = natR >= 0.7
+        ? `auto ${EXTRA * 100}%`   // landscape: hoogte overshoots → vert. pan mogelijk
+        : `${EXTRA * 100}% auto`;  // portrait:  breedte overshoots → horiz. pan mogelijk
+    }
+    fotoLayer.style.backgroundPosition = `${50 + st.fotoOffX}% ${50 + st.fotoOffY}%`;
+    headerBg.style.backgroundColor  = st.bgKleur;
+    setBlinkEl(blinkHeader, st.blinkMode, st.blinkOpacity, st.blinkKleur);
+    // jbuBlock omhoog in foto modus (2mm = 7.56px omhoog tov origineel)
+    jb.style.top = '102.04px';
+  } else {
+    blinkRight.style.display = 'block';
+    fotoLayer.style.display  = 'none';
+    headerArea.style.display = 'none';
+    setBlinkEl(blinkRight, st.blinkMode, st.blinkOpacity, st.blinkKleur);
+    jb.style.top = '274px';
+  }
+
+  // "cadeau!" kleur + positie (positie ook hier zodat Puppeteer render() voldoende is)
+  const ct = document.getElementById('cadeauTxt');
+  ct.style.color = st.binnenHoofdKleur;
+  ct.style.left  = st.cadeauLeft;
+  ct.style.top   = st.cadeauTop;
+
+  // Gradient positie (ook nodig voor PDF via Puppeteer)
+  window.gradTop = st.gradTop;
+  applyGradBackground();
+
+  // bleed bg kleur meebewegen
+  const bg = document.getElementById('bleedBg');
+  if (bg.style.display !== 'none') bg.style.background = st.bgKleur;
+
+  // "jij blinkt uit" + naam
+  jb.style.display = st.jbu ? 'block' : 'none';
+  document.getElementById('naamLine').textContent = st.naam;
+
+  // Logo (ook nodig als render() wordt aangeroepen vanuit Puppeteer na state-inject)
+  applyLogoToBox();
+  renderBinnen();
+  saveState();
+}
+
+// ── CUSTOM COLOR PICKER ──────────────────────────────
+const _pickers = {};
+
+function _hexToHsv(hex) {
+  const r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0, s = max === 0 ? 0 : d/max, v = max;
+  if (d !== 0) {
+    if (max===r) h = ((g-b)/d + (g<b?6:0))/6;
+    else if (max===g) h = ((b-r)/d + 2)/6;
+    else h = ((r-g)/d + 4)/6;
+  }
+  return { h: h*360, s, v };
+}
+
+function _hsvToHex(h, s, v) {
+  const i = Math.floor(h/60)%6, f = h/60 - Math.floor(h/60);
+  const p = v*(1-s), q = v*(1-f*s), t = v*(1-(1-f)*s);
+  const [r,g,b] = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i];
+  return '#'+[r,g,b].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('');
+}
+
+function initColorPicker(containerId, initialHex, onChange, defaultHex) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+
+  const swatch = Object.assign(document.createElement('div'), { className: 'cp-swatch' });
+  swatch.style.background = initialHex;
+
+  const popup = Object.assign(document.createElement('div'), { className: 'cp-popup' });
+  popup.style.display = 'none';
+
+  const canvasWrap = Object.assign(document.createElement('div'), { className: 'cp-canvas-wrap' });
+  const canvas = Object.assign(document.createElement('canvas'), { className: 'cp-canvas', width: 196, height: 140 });
+  const dot = Object.assign(document.createElement('div'), { className: 'cp-indicator' });
+  canvasWrap.append(canvas, dot);
+
+  const hueSlider = Object.assign(document.createElement('input'), { type: 'range', className: 'cp-hue', min: 0, max: 359, step: 1 });
+
+  const hexRow = document.createElement('div'); hexRow.className = 'cp-hex-row';
+  const hexPre = Object.assign(document.createElement('span'), { textContent: '#' });
+  const hexInp = Object.assign(document.createElement('input'), { type: 'text', className: 'cp-hex-input', maxLength: 6 });
+  hexRow.append(hexPre, hexInp);
+
+  if (defaultHex) {
+    const resetBtn = Object.assign(document.createElement('button'), {
+      className: 'cp-reset', textContent: 'Herstel beginkleur',
+      type: 'button'
+    });
+    resetBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const h2 = _hexToHsv(defaultHex);
+      setHsv(h2.h, h2.s, h2.v);
+    });
+    popup.append(canvasWrap, hueSlider, hexRow, resetBtn);
+  } else {
+    popup.append(canvasWrap, hueSlider, hexRow);
+  }
+  wrap.append(swatch, popup);
+
+  let hsv = _hexToHsv(initialHex);
+  hexInp.value = initialHex.slice(1).toUpperCase();
+  hueSlider.value = Math.round(hsv.h);
+
+  function drawCanvas() {
+    const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
+    const g1 = ctx.createLinearGradient(0,0,w,0);
+    g1.addColorStop(0,'#fff'); g1.addColorStop(1, _hsvToHex(hsv.h,1,1));
+    ctx.fillStyle = g1; ctx.fillRect(0,0,w,h);
+    const g2 = ctx.createLinearGradient(0,0,0,h);
+    g2.addColorStop(0,'rgba(0,0,0,0)'); g2.addColorStop(1,'#000');
+    ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
+  }
+
+  function updateDot() {
+    dot.style.left = (hsv.s * canvas.width)  + 'px';
+    dot.style.top  = ((1-hsv.v) * canvas.height) + 'px';
+  }
+
+  function setHsv(h, s, v, skipHexUpdate) {
+    hsv = { h: Math.max(0,Math.min(359,h)), s: Math.max(0,Math.min(1,s)), v: Math.max(0,Math.min(1,v)) };
+    const hex = _hsvToHex(hsv.h, hsv.s, hsv.v);
+    swatch.style.background = hex;
+    hueSlider.value = Math.round(hsv.h);
+    if (!skipHexUpdate) hexInp.value = hex.slice(1).toUpperCase();
+    drawCanvas(); updateDot();
+    onChange(hex);
+  }
+
+  swatch.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = popup.style.display !== 'none';
+    Object.values(_pickers).forEach(p => p.close());
+    if (!open) { popup.style.display = 'block'; drawCanvas(); updateDot(); }
+  });
+
+  let drag = false;
+  function onCanvas(e) {
+    const r = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX-r.left)/r.width));
+    const y = Math.max(0, Math.min(1, (e.clientY-r.top)/r.height));
+    setHsv(hsv.h, x, 1-y);
+  }
+  canvas.addEventListener('mousedown', e => { drag=true; onCanvas(e); e.preventDefault(); });
+  document.addEventListener('mousemove', e => { if(drag) onCanvas(e); });
+  document.addEventListener('mouseup', () => drag=false);
+
+  hueSlider.addEventListener('input', () => setHsv(+hueSlider.value, hsv.s, hsv.v));
+
+  hexInp.addEventListener('input', () => {
+    const hex = '#' + hexInp.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) { const h2 = _hexToHsv(hex); setHsv(h2.h, h2.s, h2.v, true); }
+  });
+
+  const picker = { close() { popup.style.display='none'; }, setValue(hex) { const h2=_hexToHsv(hex); setHsv(h2.h,h2.s,h2.v); } };
+  _pickers[containerId] = picker;
+  return picker;
+}
+
+document.addEventListener('click', () => Object.values(_pickers).forEach(p => p.close()));
+
+function colorWithOpacity(hex, alpha) {
+  if (alpha >= 1) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function uniquifySvgClone(svg, prefix) {
+  // 1. Prefix alle id-attributen (inclusief SVG root zelf) en bouw een mapping van oud→nieuw
+  const idMap = {};
+  [svg, ...svg.querySelectorAll('[id]')].forEach(el => {
+    if (!el.hasAttribute('id')) return;
+    const oldId = el.getAttribute('id');
+    const newId = prefix + '__' + oldId;
+    idMap[oldId] = newId;
+    el.setAttribute('id', newId);
+  });
+
+  // 2. Update url(#...) referenties in attributen (clip-path, fill, filter, mask, href)
+  const urlAttrs = ['clip-path', 'fill', 'filter', 'mask', 'href', 'xlink:href'];
+  svg.querySelectorAll('*').forEach(el => {
+    urlAttrs.forEach(attr => {
+      const val = el.getAttribute(attr);
+      if (val && val.includes('url(#')) {
+        const newVal = val.replace(/url\(#([^)]+)\)/g, (match, id) =>
+          idMap[id] ? `url(#${idMap[id]})` : match
+        );
+        if (newVal !== val) el.setAttribute(attr, newVal);
+      }
+    });
+  });
+
+  // 3. Verwijder SVG-level clipPath — panel-CSS (overflow:hidden / clip-path:inset)
+  //    handelt het afknippen af, zodat bleed correct werkt zonder dubbelrendering
+  svg.querySelectorAll('[clip-path]').forEach(el => el.removeAttribute('clip-path'));
+  svg.querySelectorAll('clipPath').forEach(el => el.remove());
+
+  // 4. CSS-klassenamen prefixen — voorkomt dat kleur-SVG klassen van wit-SVG overschrijft
+  const style = svg.querySelector('style');
+  if (style) {
+    style.textContent = style.textContent.replace(/\.cls-(\d+)/g, `.${prefix}-cls-$1`);
+  }
+  svg.querySelectorAll('[class]').forEach(el => {
+    el.setAttribute('class',
+      el.getAttribute('class').replace(/\bcls-(\d+)\b/g, `${prefix}-cls-$1`));
+  });
+  return svg;
+}
+
+function setBlinkEl(el, mode, opacity, kleur) {
+  // Verwijder eerder ingevoegde inline SVG
+  el.querySelectorAll('svg.blink-inline').forEach(s => s.remove());
+  // Reset CSS-eigenschappen die het oude systeem gebruikte
+  el.style.backgroundImage = 'none';
+  el.style.webkitMaskImage = 'none';
+  el.style.maskImage = 'none';
+
+  const prefix = el.id || ('blink' + Math.random().toString(36).slice(2, 7));
+
+  if (mode === 'kleur') {
+    el.style.backgroundColor = 'transparent';
+    el.style.color = '';
+    el.style.opacity = 1;
+    if (_svgKleur) {
+      const svg = uniquifySvgClone(_svgKleur.cloneNode(true), prefix);
+      svg.classList.add('blink-inline');
+      el.appendChild(svg);
+    }
+  } else {
+    // Wit-modus: opaciteit via rgba() op color (niet CSS opacity) — voorkomt compositing-rasterisatie in PDF
+    el.style.backgroundColor = 'transparent';
+    el.style.color = colorWithOpacity(kleur, opacity);
+    el.style.opacity = 1;
+    if (_svgWit) {
+      const svg = uniquifySvgClone(_svgWit.cloneNode(true), prefix);
+      svg.classList.add('blink-inline');
+      el.appendChild(svg);
+    }
+  }
+}
+
+function applyBlink(val) {
+  st.blinkMode = val;
+  document.getElementById('opacityCtrl').classList.toggle('hidden', val !== 'wit');
+  render();
+}
+
+function applyBlinkKleur() { render(); }
+
+function applyOpacity(val) {
+  st.blinkOpacity = val / 100;
+  document.getElementById('opacityVal').textContent = val + '%';
+  render();
+}
+
+function applyBlinkRug(val) { st.blinkModeRug = val; render(); }
+
+function applyVariant(val) {
+  st.variant = val;
+  document.getElementById('fotoUploadCtrl').classList.toggle('hidden', val !== 'foto');
+  render();
+}
+
+// Herscaal grote afbeeldingen voor transport naar server (voorkomt enorme JSON-payload)
+function compressImage(dataUrl, maxPx, outputType, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = Math.max(img.naturalWidth, img.naturalHeight);
+      if (maxDim <= maxPx && outputType !== 'image/jpeg') {
+        resolve(dataUrl); // Klein genoeg, niet opnieuw coderen
+        return;
+      }
+      const scale = Math.min(1, maxPx / maxDim);
+      const w = Math.round(img.naturalWidth  * scale);
+      const h = Math.round(img.naturalHeight * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const out = canvas.toDataURL(outputType, quality);
+      resolve(out.length < dataUrl.length ? out : dataUrl);
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+function applyFotoUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const fileName = input.files[0].name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = async () => {
+      const natW = img.naturalWidth;
+      const natH = img.naturalHeight;
+      // Comprimeer naar max 2000px JPEG voor transport (originele afmetingen bewaard voor DPI-check)
+      const compressed = await compressImage(e.target.result, 4000, 'image/jpeg', 0.90);
+      st.fotoNatW = natW;
+      st.fotoNatH = natH;
+      st.fotoSrc = compressed;
+      // Reset aanpassingen bij nieuwe foto
+      st.fotoScale = 1; st.fotoOffX = 0; st.fotoOffY = 0;
+      document.getElementById('fotoScaleSlider').value = 100;
+      document.getElementById('fotoOffXSlider').value  = 0;
+      document.getElementById('fotoOffYSlider').value  = 0;
+      document.getElementById('fotoScaleVal').textContent = '100%';
+      document.getElementById('fotoFilename').textContent = fileName;
+      document.getElementById('fotoRemove').style.display = 'inline-flex';
+      document.getElementById('fotoAdjustCtrl').style.display = 'block';
+      checkFotoResolutie();
+      render();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function removeFoto() {
+  st.fotoSrc = null; st.fotoScale = 1; st.fotoOffX = 0; st.fotoOffY = 0; st.fotoNatW = 0; st.fotoNatH = 0;
+  document.getElementById('fotoFilename').textContent = '';
+  document.getElementById('fotoRemove').style.display = 'none';
+  document.getElementById('fotoUpload').value = '';
+  document.getElementById('fotoAdjustCtrl').style.display = 'none';
+  render();
+}
+
+function checkFotoResolutie() {
+  const warn = document.getElementById('fotoResWarning');
+  if (!st.fotoNatW || !st.fotoNatH) { warn.style.display = 'none'; return; }
+  const EXTRA = 1.5 * st.fotoScale;
+  const natR  = st.fotoNatW / st.fotoNatH;
+  // Effectieve DPI op het gedrukte paneel (140×200mm)
+  const dpi = natR >= 0.7
+    ? Math.round(st.fotoNatH * 25.4 / (EXTRA * 200))  // landscape: hoogte is beperkend
+    : Math.round(st.fotoNatW * 25.4 / (EXTRA * 140));  // portrait:  breedte is beperkend
+  if (dpi < 240) {
+    warn.textContent = `⚠ Resolutie te laag voor druk (${dpi} DPI). Minimaal 240 DPI aanbevolen. Gebruik een grotere afbeelding of verklein de schaal.`;
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+function applyFotoAdjust() {
+  st.fotoScale = document.getElementById('fotoScaleSlider').value / 100;
+  st.fotoOffX  = parseInt(document.getElementById('fotoOffXSlider').value);
+  st.fotoOffY  = parseInt(document.getElementById('fotoOffYSlider').value);
+  document.getElementById('fotoScaleVal').textContent = Math.round(st.fotoScale * 100) + '%';
+  checkFotoResolutie();
+  render();
+}
+
+function applyNaam(val)  { st.naam = val; render(); }
+function applyJbu(val)   { st.jbu  = val; render(); }
+
+function applyLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = async e => {
+    let logoData = e.target.result;
+    // SVG's zijn al klein tekst — raster logo's comprimeren naar max 800px
+    if (!file.type.includes('svg')) {
+      const outType = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+      logoData = await compressImage(logoData, 800, outType, 0.9);
+    }
+    st.logoSrc = logoData;
+    applyLogoToBox();
+    document.getElementById('logoFilename').textContent = file.name;
+    document.getElementById('logoRemove').style.display = 'inline-flex';
+    saveState();
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyLogoToBox() {
+  const lb = document.getElementById('logoBox');
+  if (st.logoSrc) {
+    lb.style.border = 'none';
+    lb.innerHTML = `<img src="${st.logoSrc}" style="width:100%;height:100%;object-fit:contain;display:block;">`;
+  } else {
+    lb.style.border = '1px dashed #bbb';
+    lb.innerHTML = `<span id="logoTxt" style="font-family:'Source Sans 3',sans-serif;color:#aaa;">jouw logo</span>`;
+    document.getElementById('logoTxt').style.fontSize = Math.round(2.8 * S) + 'px';
+  }
+}
+
+function removeLogo() {
+  st.logoSrc = null;
+  applyLogoToBox();
+  document.getElementById('logoFilename').textContent = '';
+  document.getElementById('logoRemove').style.display = 'none';
+  document.getElementById('logoUpload').value = '';
+  saveState();
+}
+
+// ── TAB SWITCHING ────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.side-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.side-content').forEach(c =>
+    c.classList.toggle('active', c.id === 'tab-' + tab));
+  const isBuiten = tab === 'buiten';
+  document.getElementById('spread').style.display       = isBuiten ? '' : 'none';
+  document.getElementById('spreadBinnen').style.display = isBuiten ? 'none' : '';
+  if (!isBuiten) renderBinnen();
+}
+
+// ── VIEW SWITCHING ───────────────────────────────────
+function switchView(view, el) {
+  document.querySelectorAll('.view-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const isBuiten = view === 'buiten';
+  document.getElementById('spread').style.display       = isBuiten ? '' : 'none';
+  document.getElementById('spreadBinnen').style.display = isBuiten ? 'none' : '';
+  switchTab(isBuiten ? 'buiten' : 'binnen');
+  if (!isBuiten) renderBinnen();
+}
+
+// ── ZOOM ─────────────────────────────────────────────
+function zoomPanel(which) {
+  const ids = {
+    rug: 'panelRug', mid: 'panelMid', right: 'panelRight',
+    binnenLinks: 'binnenLinks', binnenMidden: 'binnenMidden', binnenRechts: 'binnenRechts',
+  };
+  const panel = document.getElementById(ids[which]);
+  const clone = panel.cloneNode(true);
+
+  const rect = panel.getBoundingClientRect();
+  const pW = parseFloat(panel.style.width)  || rect.width;
+  const pH = parseFloat(panel.style.height) || rect.height;
+  const maxW = window.innerWidth  * 0.88;
+  const maxH = window.innerHeight * 0.88;
+  const scale = Math.min(maxW / pW, maxH / pH);
+
+  const inner = document.getElementById('zoomInner');
+  inner.style.width  = (pW * scale) + 'px';
+  inner.style.height = (pH * scale) + 'px';
+
+  clone.style.position       = 'absolute';
+  clone.style.top = clone.style.left = '0';
+  clone.style.width          = pW + 'px';
+  clone.style.height         = pH + 'px';
+  clone.style.transform      = `scale(${scale})`;
+  clone.style.transformOrigin = 'top left';
+  clone.style.cursor         = 'default';
+  clone.style.filter         = 'none';
+  clone.onclick              = null;
+
+  inner.innerHTML = '';
+  inner.appendChild(clone);
+  document.getElementById('zoomBg').classList.add('open');
+}
+
+function closeZoom(e) {
+  if (!e || e.target === document.getElementById('zoomBg') ||
+      (e.target && e.target.classList.contains('zoom-close'))) {
+    document.getElementById('zoomBg').classList.remove('open');
+    document.getElementById('zoomInner').innerHTML = '';
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeZoom(); });
+
+// ── BOOT ─────────────────────────────────────────────
+async function exportPDF() {
+  const btn = document.getElementById('exportBtn');
+  const bleedOn = true; // altijd met bleed exporteren
+
+  btn.disabled = true;
+  btn.textContent = 'Bezig…';
+
+  try {
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 90_000); // 90s timeout
+    let resp;
+    try {
+      resp = await fetch('/export-pdf', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ state: { ...st }, bleed: bleedOn }),
+        signal:  controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!resp.ok) {
+      const msg = await resp.text();
+      alert('Export mislukt:\n' + msg);
+      return;
+    }
+
+    const { token, error } = await resp.json();
+    if (error) { alert('Export mislukt:\n' + error); return; }
+    // Haal PDF op als blob — werkt in alle browsers zonder paginanavigatie
+    const dlResp = await fetch('/download/' + token);
+    const blob   = await dlResp.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = 'blink-cadeaukaart.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      alert('Export duurde te lang (>90s). Probeer een kleiner logo- of fotobestand.');
+    } else {
+      alert('Export mislukt:\n' + err.message);
+    }
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Download PDF';
+  }
+}
+
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadState(); // herstel opgeslagen instellingen vóór alles
+  initColorPicker('cp-bgKleur',     st.bgKleur,     hex => { st.bgKleur     = hex; render(); },        '#f2cc7a');
+  initColorPicker('cp-blinkKleur',  st.blinkKleur,  hex => { st.blinkKleur  = hex; render(); },        '#ffffff');
+  initColorPicker('cp-binnenHoofd',  st.binnenHoofdKleur, hex => { st.binnenHoofdKleur = hex; renderBinnen(); render(); }, '#8cb16f');
+  initColorPicker('cp-binnenKleur2', st.binnenKleur2,     hex => { st.binnenKleur2     = hex; renderBinnen(); }, '#76a5b8');
+  initColorPicker('cp-binnenKleur3',    st.binnenKleur3,    hex => { st.binnenKleur3    = hex; renderBinnen(); }, '#f08889');
+  initColorPicker('cp-binnenKleurZoek', st.binnenKleurZoek, hex => { st.binnenKleurZoek = hex; renderBinnen(); }, '#f8f0e4');
+  initColorPicker('cp-binnenBoog',   st.binnenBoogKleur,  hex => { st.binnenBoogKleur  = hex; layoutBinnenElements(); renderBinnen(); }, '#76a6b9');
+  syncUI();
+  initDim();
+  render();
+});
+</script>
+
+<!-- ═══ BEELDBANK MODAAL ══════════════════════════════ -->
+<div id="beeldbankOverlay" onclick="closeBeeldbankOnOverlay(event)">
+  <div id="beeldbankModal">
+    <header>
+      <span>Beeldbank</span>
+      <button onclick="closeBeeldbank()">✕</button>
+    </header>
+    <div id="beeldbankGrid"></div>
+  </div>
+</div>
+
+<script>
+// ── BEELDBANK ─────────────────────────────────────────
+
+async function openBeeldbank() {
+  const overlay = document.getElementById('beeldbankOverlay');
+  const grid    = document.getElementById('beeldbankGrid');
+  overlay.classList.add('open');
+  grid.innerHTML = '<div id="beeldbankEmpty">Laden…</div>';
+
+  try {
+    const imgs = await fetch('/beeldbank').then(r => r.json());
+    if (!imgs.length) {
+      grid.innerHTML = '<div id="beeldbankEmpty">Geen afbeeldingen gevonden.<br>Voeg bestanden toe aan <em>assets/beeldbank/</em></div>';
+      return;
+    }
+    grid.innerHTML = '';
+    imgs.forEach(src => {
+      const img = document.createElement('img');
+      img.src       = src;
+      img.className = 'bb-thumb';
+      if (st.fotoSrc === src) img.classList.add('selected');
+      img.onclick = () => selectBeeldbankImg(src);
+      grid.appendChild(img);
+    });
+  } catch (e) {
+    grid.innerHTML = '<div id="beeldbankEmpty">Fout bij laden beeldbank.</div>';
+  }
+}
+
+function selectBeeldbankImg(src) {
+  // Laad afbeelding om natuurlijke afmetingen te kennen (resolutiecheck)
+  const probe = new Image();
+  probe.onload = () => {
+    st.fotoSrc    = src;
+    st.fotoNatW   = probe.naturalWidth;
+    st.fotoNatH   = probe.naturalHeight;
+    st.fotoScale  = 1;
+    st.fotoOffX   = 0;
+    st.fotoOffY   = 0;
+    document.getElementById('fotoScaleSlider').value     = 100;
+    document.getElementById('fotoScaleVal').textContent  = '100%';
+    document.getElementById('fotoOffXSlider').value      = 0;
+    document.getElementById('fotoOffYSlider').value      = 0;
+    document.getElementById('fotoFilename').textContent  = src.split('/').pop();
+    document.getElementById('fotoRemove').style.display  = 'inline-flex';
+    document.getElementById('fotoAdjustCtrl').style.display = 'block';
+    checkFotoResolutie();
+    render();
+    closeBeeldbank();
+  };
+  probe.src = src;
+}
+
+function closeBeeldbank() {
+  document.getElementById('beeldbankOverlay').classList.remove('open');
+}
+
+function closeBeeldbankOnOverlay(e) {
+  if (e.target === document.getElementById('beeldbankOverlay')) closeBeeldbank();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeBeeldbank();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Cadeaukaart Configurator",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 8787,
+      "autoPort": false,
+      "url": "http://localhost:8787"
+    }
+  ]
+}
