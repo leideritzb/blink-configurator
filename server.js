@@ -426,10 +426,21 @@ async function generatePDF(state, bleed) {
 
 // ─── STATS ───────────────────────────────────────────────────────────────────
 
-const downloads = [];
+const STATS_FILE = process.env.STATS_FILE || path.join(__dirname, 'stats.json');
+
+let downloads = [];
+try {
+  if (fs.existsSync(STATS_FILE)) {
+    downloads = JSON.parse(fs.readFileSync(STATS_FILE, 'utf8'));
+    console.log(`Stats geladen: ${downloads.length} downloads`);
+  }
+} catch (e) {
+  console.warn('Stats laden mislukt:', e.message);
+}
 
 function logDownload() {
   downloads.push(new Date().toISOString());
+  try { fs.writeFileSync(STATS_FILE, JSON.stringify(downloads)); } catch (e) { console.warn('Stats opslaan mislukt:', e.message); }
 }
 
 function statsHtml() {
@@ -453,7 +464,7 @@ function statsHtml() {
   <table><tr><th>Datum</th><th>Downloads</th></tr>${rows || '<tr><td colspan=2>Nog geen downloads</td></tr>'}</table>
   <h2>Recente downloads</h2>
   <ul>${recent || '<li>Nog geen downloads</li>'}</ul>
-  <p style="color:#999;font-size:12px">Let op: statistieken worden gewist bij een server-herstart.</p>
+  <p style="color:#999;font-size:12px">Statistieken worden permanent bewaard.</p>
   </body></html>`;
 }
 
