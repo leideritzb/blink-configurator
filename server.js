@@ -424,6 +424,39 @@ async function generatePDF(state, bleed) {
   }
 }
 
+// ─── STATS ───────────────────────────────────────────────────────────────────
+
+const downloads = [];
+
+function logDownload() {
+  downloads.push(new Date().toISOString());
+}
+
+function statsHtml() {
+  const byDay = {};
+  for (const ts of downloads) {
+    const day = ts.slice(0, 10);
+    byDay[day] = (byDay[day] || 0) + 1;
+  }
+  const rows = Object.entries(byDay).sort().reverse()
+    .map(([d, n]) => `<tr><td>${d}</td><td>${n}</td></tr>`).join('');
+  const recent = downloads.slice(-20).reverse()
+    .map(ts => `<li>${new Date(ts).toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })}</li>`).join('');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Blink stats</title>
+  <style>body{font-family:sans-serif;max-width:600px;margin:40px auto;color:#333}
+  table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px 12px}
+  th{background:#f5f5f5}h1{color:#c8a84b}</style></head><body>
+  <h1>Cadeaukaart configurator</h1>
+  <p><strong>Totaal downloads:</strong> ${downloads.length}</p>
+  <h2>Per dag</h2>
+  <table><tr><th>Datum</th><th>Downloads</th></tr>${rows || '<tr><td colspan=2>Nog geen downloads</td></tr>'}</table>
+  <h2>Recente downloads</h2>
+  <ul>${recent || '<li>Nog geen downloads</li>'}</ul>
+  <p style="color:#999;font-size:12px">Let op: statistieken worden gewist bij een server-herstart.</p>
+  </body></html>`;
+}
+
 // ─── PDF TOKEN STORE (in-memory, auto-expire 5 min) ─────────────────────────
 
 const pdfStore = new Map();
@@ -449,6 +482,7 @@ http.createServer((req, res) => {
         console.log('PDF genereren… bleed:', bleed);
         const pdfBuf = await generatePDF(state, bleed);
         const token  = storePDF(pdfBuf);
+        logDownload();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ token }));
         console.log(`PDF klaar (${(pdfBuf.length / 1024).toFixed(0)} KB)`);
@@ -458,6 +492,22 @@ http.createServer((req, res) => {
         res.end(JSON.stringify({ error: err.message }));
       }
     });
+    return;
+  }
+
+  if (req.method === 'GET' && req.url === '/stats') {
+    const STATS_PASS = process.env.STATS_PASSWORD || 'blink2026';
+    const auth = req.headers['authorization'] || '';
+    const [type, encoded] = auth.split(' ');
+    const valid = type === 'Basic' &&
+      Buffer.from(encoded || '', 'base64').toString() === `blink:${STATS_PASS}`;
+    if (!valid) {
+      res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Blink stats"' });
+      res.end('Geen toegang');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(statsHtml());
     return;
   }
 
