@@ -237,6 +237,12 @@ async function generatePDF(state, bleed) {
     await page.evaluate((st, bleedOn) => {
       Object.assign(window.st, st);
 
+      // Velden die de drukker invult — leeg in PDF, alleen zichtbaar in preview
+      window.st.binnenUrl        = '';
+      window.st.binnenGeldig     = '';
+      window.st.binnenCode       = '';
+      window.st.binnenWachtwoord = '';
+
       // Wissel view: toon binnenkant, verberg buitenkant
       const spreadEl    = document.getElementById('spread');
       const spreadBinEl = document.getElementById('spreadBinnen');

@@ -1061,10 +1061,10 @@ const st = {
   fotoNatH:     0,   // natural image height (px)
   // Binnenkant
   binnenNaam:       '[naam]',
-  binnenUrl:        '',
-  binnenGeldig:     '',
-  binnenCode:       '',
-  binnenWachtwoord: '',
+  binnenUrl:        'jouwblink.nl/bedrijfsnaam',
+  binnenGeldig:     'van 6-12-23 t/m 31-03-24',
+  binnenCode:       '123456789',
+  binnenWachtwoord: 'abcde',
   binnenHoofdKleur: '#8cb16f',
   binnenKleur2:     '#76a5b8',
   binnenKleur3:     '#f08889',
@@ -1708,6 +1708,10 @@ function loadState() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     Object.assign(st, JSON.parse(raw));
+    if (!st.binnenUrl)        st.binnenUrl        = 'jouwblink.nl/bedrijfsnaam';
+    if (!st.binnenGeldig)     st.binnenGeldig     = 'van 6-12-23 t/m 31-03-24';
+    if (!st.binnenCode)       st.binnenCode       = '123456789';
+    if (!st.binnenWachtwoord) st.binnenWachtwoord = 'abcde';
     window.gradTop = st.gradTop;
   } catch(e) {}
 }
