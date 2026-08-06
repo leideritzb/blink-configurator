@@ -715,6 +715,7 @@
           ">✕</button>
         </div>
         <div id="logoFilename" style="font-size:11px; color:#aaa; margin-top:5px;"></div>
+        <div id="logoResWarning" style="display:none; margin-top:6px; padding:6px 8px; background:#fde8e8; border:1px solid #e53e3e; border-radius:4px; font-size:11px; color:#9b1c1c; line-height:1.4;"></div>
       </div>
     </div>
 
@@ -742,6 +743,23 @@
       </div>
     </div>
 
+
+    <div class="section">
+      <div class="section-title">Blinkertjes</div>
+      <div class="ctrl">
+        <label>Blinkertjespatroon</label>
+        <div class="radio-group">
+          <label class="radio-opt">
+            <input type="radio" name="binnenBlink" value="kleur" checked onchange="applyBinnenBlink(this.value)">
+            Gekleurde blinkertjes
+          </label>
+          <label class="radio-opt">
+            <input type="radio" name="binnenBlink" value="geen" onchange="applyBinnenBlink(this.value)">
+            Geen blinkertjes
+          </label>
+        </div>
+      </div>
+    </div>
 
     <div class="section">
       <div class="section-title">Kleuren</div>
@@ -1062,7 +1080,8 @@ const st = {
   blinkMode:    'kleur',
   blinkOpacity: 0.6,
   blinkKleur:   '#ffffff',
-  blinkModeRug: 'kleur',
+  blinkModeRug:   'kleur',
+  binnenBlinkMode: 'kleur',
   cadeauKleur:  '#83b070',
   cadeauTop:    '155px',
   cadeauLeft:   '15.04px',
@@ -1078,6 +1097,8 @@ const st = {
   fotoOffY:     0,   // % verschuiving verticaal
   fotoNatW:     0,   // natural image width (px)
   fotoNatH:     0,   // natural image height (px)
+  logoNatW:     0,
+  logoNatH:     0,
   // Binnenkant
   binnenNaam:       '[naam]',
   binnenUrl:        'jouwblink.nl/bedrijfsnaam',
@@ -1630,8 +1651,8 @@ function renderBinnen() {
   document.getElementById('binnenLinks').style.background = st.bgKleur;
 
   // Blinkertjes midden + rechts
-  setBlinkEl(document.getElementById('blinkBinnenMid'),    st.blinkMode, st.blinkOpacity, st.blinkKleur);
-  setBlinkEl(document.getElementById('blinkBinnenRechts'), st.blinkMode, st.blinkOpacity, st.blinkKleur);
+  setBlinkEl(document.getElementById('blinkBinnenMid'),    st.binnenBlinkMode, st.blinkOpacity, st.blinkKleur);
+  setBlinkEl(document.getElementById('blinkBinnenRechts'), st.binnenBlinkMode, st.blinkOpacity, st.blinkKleur);
   // blinkBinnenMid: natuurlijke breedte (140mm), inset:0 herstellen
   const _blinkMidW   = Math.round(140 * S);
   const _blinkRechtsW = Math.round(50 * S); // binnenRechts breedte
@@ -1739,6 +1760,7 @@ function syncUI() {
   // Radio buttons
   document.querySelectorAll('input[name="blink"]').forEach(r => r.checked = r.value === st.blinkMode);
   document.querySelectorAll('input[name="blinkRug"]').forEach(r => r.checked = r.value === st.blinkModeRug);
+  document.querySelectorAll('input[name="binnenBlink"]').forEach(r => r.checked = r.value === st.binnenBlinkMode);
   document.querySelectorAll('input[name="variant"]').forEach(r => r.checked = r.value === st.variant);
   // Opacity slider
   const opR = document.getElementById('opacityRange');
@@ -2103,6 +2125,7 @@ function applyOpacity(val) {
 }
 
 function applyBlinkRug(val) { st.blinkModeRug = val; render(); }
+function applyBinnenBlink(val) { st.binnenBlinkMode = val; renderBinnen(); }
 
 function applyVariant(val) {
   st.variant = val;
@@ -2204,16 +2227,42 @@ function applyNaam(val)  { st.naam = val; render(); }
 function applyJbu(val)   { st.jbu  = val; render(); }
 function applyJbuTekst(val) { st.jbuTekst = val; render(); }
 
+function checkLogoResolutie() {
+  const warn = document.getElementById('logoResWarning');
+  if (!st.logoNatW || !st.logoNatH) { warn.style.display = 'none'; return; }
+  // Logo box: 45×16mm
+  const dpiW = Math.round(st.logoNatW * 25.4 / 45);
+  const dpiH = Math.round(st.logoNatH * 25.4 / 16);
+  const dpi  = Math.min(dpiW, dpiH);
+  if (dpi < 240) {
+    warn.textContent = `⚠ Resolutie te laag voor druk (${dpi} DPI). Minimaal 240 DPI aanbevolen. Gebruik een groter logobestand.`;
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
 function applyLogo(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
+  const isSvg = file.type.includes('svg');
   const reader = new FileReader();
   reader.onload = async e => {
     let logoData = e.target.result;
     // SVG's zijn al klein tekst — raster logo's comprimeren naar max 800px
-    if (!file.type.includes('svg')) {
+    if (!isSvg) {
       const outType = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
       logoData = await compressImage(logoData, 800, outType, 0.9);
+      const img = new Image();
+      img.onload = () => {
+        st.logoNatW = img.naturalWidth;
+        st.logoNatH = img.naturalHeight;
+        checkLogoResolutie();
+      };
+      img.src = logoData;
+    } else {
+      st.logoNatW = 0; st.logoNatH = 0;
+      document.getElementById('logoResWarning').style.display = 'none';
     }
     st.logoSrc = logoData;
     applyLogoToBox();
@@ -2237,7 +2286,8 @@ function applyLogoToBox() {
 }
 
 function removeLogo() {
-  st.logoSrc = null;
+  st.logoSrc = null; st.logoNatW = 0; st.logoNatH = 0;
+  document.getElementById('logoResWarning').style.display = 'none';
   applyLogoToBox();
   document.getElementById('logoFilename').textContent = '';
   document.getElementById('logoRemove').style.display = 'none';
