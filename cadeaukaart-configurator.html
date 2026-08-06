@@ -754,9 +754,22 @@
             Gekleurde blinkertjes
           </label>
           <label class="radio-opt">
+            <input type="radio" name="binnenBlink" value="wit" onchange="applyBinnenBlink(this.value)">
+            Eigen kleur
+          </label>
+          <label class="radio-opt">
             <input type="radio" name="binnenBlink" value="geen" onchange="applyBinnenBlink(this.value)">
             Geen blinkertjes
           </label>
+        </div>
+        <div id="binnenBlinkKleurCtrl" style="display:none; margin-top:8px;">
+          <label style="display:block; font-size:12px; color:#444; margin-bottom:6px;">Kleur blinkertjes</label>
+          <div class="ctrl-row" style="position:relative;"><div id="cp-binnenBlinkKleur"></div></div>
+          <div class="range-label" style="margin-top:8px;">
+            <span>Dekking</span><span id="binnenOpacityVal">60%</span>
+          </div>
+          <input type="range" id="binnenOpacityRange" min="30" max="100" value="60"
+            oninput="applyBinnenOpacity(this.value)">
         </div>
       </div>
     </div>
@@ -1081,7 +1094,9 @@ const st = {
   blinkOpacity: 0.6,
   blinkKleur:   '#ffffff',
   blinkModeRug:   'kleur',
-  binnenBlinkMode: 'kleur',
+  binnenBlinkMode:    'kleur',
+  binnenBlinkKleur:   '#f2cc7a',
+  binnenBlinkOpacity: 0.6,
   cadeauKleur:  '#83b070',
   cadeauTop:    '155px',
   cadeauLeft:   '15.04px',
@@ -1651,8 +1666,8 @@ function renderBinnen() {
   document.getElementById('binnenLinks').style.background = st.bgKleur;
 
   // Blinkertjes midden + rechts
-  setBlinkEl(document.getElementById('blinkBinnenMid'),    st.binnenBlinkMode, st.blinkOpacity, st.blinkKleur);
-  setBlinkEl(document.getElementById('blinkBinnenRechts'), st.binnenBlinkMode, st.blinkOpacity, st.blinkKleur);
+  setBlinkEl(document.getElementById('blinkBinnenMid'),    st.binnenBlinkMode, st.binnenBlinkOpacity, st.binnenBlinkKleur);
+  setBlinkEl(document.getElementById('blinkBinnenRechts'), st.binnenBlinkMode, st.binnenBlinkOpacity, st.binnenBlinkKleur);
   // blinkBinnenMid: natuurlijke breedte (140mm), inset:0 herstellen
   const _blinkMidW   = Math.round(140 * S);
   const _blinkRechtsW = Math.round(50 * S); // binnenRechts breedte
@@ -1761,6 +1776,9 @@ function syncUI() {
   document.querySelectorAll('input[name="blink"]').forEach(r => r.checked = r.value === st.blinkMode);
   document.querySelectorAll('input[name="blinkRug"]').forEach(r => r.checked = r.value === st.blinkModeRug);
   document.querySelectorAll('input[name="binnenBlink"]').forEach(r => r.checked = r.value === st.binnenBlinkMode);
+  document.getElementById('binnenBlinkKleurCtrl').style.display = st.binnenBlinkMode === 'wit' ? '' : 'none';
+  document.getElementById('binnenOpacityRange').value = Math.round(st.binnenBlinkOpacity * 100);
+  document.getElementById('binnenOpacityVal').textContent = Math.round(st.binnenBlinkOpacity * 100) + '%';
   document.querySelectorAll('input[name="variant"]').forEach(r => r.checked = r.value === st.variant);
   // Opacity slider
   const opR = document.getElementById('opacityRange');
@@ -2125,7 +2143,17 @@ function applyOpacity(val) {
 }
 
 function applyBlinkRug(val) { st.blinkModeRug = val; render(); }
-function applyBinnenBlink(val) { st.binnenBlinkMode = val; renderBinnen(); }
+function applyBinnenBlink(val) {
+  st.binnenBlinkMode = val;
+  document.getElementById('binnenBlinkKleurCtrl').style.display = val === 'wit' ? '' : 'none';
+  renderBinnen();
+}
+
+function applyBinnenOpacity(val) {
+  st.binnenBlinkOpacity = val / 100;
+  document.getElementById('binnenOpacityVal').textContent = val + '%';
+  renderBinnen();
+}
 
 function applyVariant(val) {
   st.variant = val;
@@ -2422,6 +2450,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadState(); // herstel opgeslagen instellingen vóór alles
   initColorPicker('cp-bgKleur',     st.bgKleur,     hex => { st.bgKleur     = hex; render(); checkDarkColor(hex,'bgKleurWarn'); },        '#f2cc7a');
   initColorPicker('cp-blinkKleur',  st.blinkKleur,  hex => { st.blinkKleur  = hex; render(); },        '#ffffff');
+  initColorPicker('cp-binnenBlinkKleur', st.binnenBlinkKleur, hex => { st.binnenBlinkKleur = hex; renderBinnen(); }, '#f2cc7a');
   initColorPicker('cp-binnenHoofd',  st.binnenHoofdKleur, hex => { st.binnenHoofdKleur = hex; renderBinnen(); render(); }, '#8cb16f');
   initColorPicker('cp-binnenKleur2', st.binnenKleur2,     hex => { st.binnenKleur2     = hex; renderBinnen(); }, '#76a5b8');
   initColorPicker('cp-binnenKleur3',    st.binnenKleur3,    hex => { st.binnenKleur3    = hex; renderBinnen(); }, '#f08889');
