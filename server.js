@@ -48,7 +48,8 @@ async function convertToCMYK(pdfBuffer) {
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
       '-dCompatibilityLevel=1.4',
-      '-dPDFSETTINGS=/prepress',
+      '-dOverrideICC',                         // negeer embedded ICC van Puppeteer
+      '-sDefaultCMYKProfile=default_cmyk.icc', // GS-profiel met 100% GCR → K=100 voor zwart
       '-sOutputFile=' + tmpOut,
       tmpIn,
     ]);
