@@ -259,7 +259,7 @@
 
     .export-btn {
       padding: 7px 18px;
-      background: #1a1a1a;
+      background: #000;
       color: #fff;
       border: none;
       border-radius: 6px;
@@ -267,6 +267,8 @@
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
+    }
+    .export-btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
     }
@@ -302,6 +304,7 @@
     /* fold indicators */
     .panel-rug  { border-right: 1.5px dashed rgba(180,40,80,0.45); }
     .panel-mid  { border-right: 1.5px dashed rgba(180,40,80,0.45); }
+    .fold-indicator { display: block; }
 
     .blink-overlay {
       position: absolute;
@@ -320,6 +323,38 @@
     /* Gradient handle: alleen zichtbaar bij hover of selectie */
 
     /* ── BEELDBANK MODAAL ───────────────────────────── */
+    #pdfConfirmOverlay {
+      display: none; position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0,0,0,0.45);
+      align-items: center; justify-content: center;
+    }
+    #pdfConfirmOverlay.open { display: flex; }
+    #pdfConfirmModal {
+      background: #fff; border-radius: 12px;
+      width: 380px; max-width: 95vw;
+      padding: 28px 24px 20px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    }
+    #pdfConfirmModal h3 {
+      margin: 0 0 12px; font-size: 15px; color: #222; font-weight: 600;
+    }
+    #pdfConfirmModal p {
+      margin: 0 0 20px; font-size: 13px; color: #555; line-height: 1.5;
+    }
+    #pdfConfirmModal .modal-btns {
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+    #pdfConfirmModal .btn-cancel {
+      padding: 8px 16px; border-radius: 6px; border: 1px solid #ddd;
+      background: #fff; color: #555; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    #pdfConfirmModal .btn-ok {
+      padding: 8px 16px; border-radius: 6px; border: none;
+      background: #000; color: #fff; font-size: 13px; cursor: pointer; font-weight: 600; font-family: inherit;
+    }
+    #pdfConfirmModal .btn-cancel:hover { background: #f5f5f5; }
+    #pdfConfirmModal .btn-ok:hover { background: #333; }
+
     #beeldbankOverlay {
       display: none;
       position: fixed; inset: 0; z-index: 1000;
@@ -443,6 +478,15 @@
       background: none; border: none; padding: 0; font-family: inherit;
     }
     .cp-reset:hover { color: #555; }
+    .cp-close {
+      position: absolute; top: 8px; right: 8px; z-index: 10;
+      width: 20px; height: 20px;
+      background: rgba(255,255,255,0.85); border: none; cursor: pointer;
+      font-size: 14px; color: #666; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; padding: 0;
+    }
+    .cp-close:hover { color: #333; background: #f0f0f0; }
 
     /* ── ZOOM OVERLAY ───────────────────────────────── */
     .zoom-bg {
@@ -510,6 +554,10 @@
         position: static !important;
         display: inline-block !important;
       }
+
+      body.is-printing .fold-indicator { display: none !important; }
+      body.is-printing .panel-rug,
+      body.is-printing .panel-mid { border-right: none !important; }
     }
   </style>
 </head>
@@ -851,6 +899,10 @@
       </div>
 
     <div class="spread" id="spread" style="position:relative; z-index:1;">
+
+      <!-- Horizontal fold indicators at 15mm and 185mm (7.5% / 92.5% of 200mm height) -->
+      <div class="fold-indicator" style="position:absolute; left:0; right:0; top:7.5%; border-top:1.5px dashed rgba(180,40,80,0.45); pointer-events:none; z-index:10;"></div>
+      <div class="fold-indicator" style="position:absolute; left:0; right:0; top:92.5%; border-top:1.5px dashed rgba(180,40,80,0.45); pointer-events:none; z-index:10;"></div>
 
       <!-- RUG / FLAP -->
       <div class="panel panel-rug" id="panelRug"
@@ -1937,6 +1989,11 @@ function initColorPicker(containerId, initialHex, onChange, defaultHex) {
 
   const popup = Object.assign(document.createElement('div'), { className: 'cp-popup' });
   popup.style.display = 'none';
+  popup.style.position = 'absolute';
+
+  const closeBtn = Object.assign(document.createElement('button'), { className: 'cp-close', type: 'button', textContent: '✕' });
+  closeBtn.addEventListener('click', e => { e.stopPropagation(); popup.style.display = 'none'; });
+  popup.appendChild(closeBtn);
 
   const canvasWrap = Object.assign(document.createElement('div'), { className: 'cp-canvas-wrap' });
   const canvas = Object.assign(document.createElement('canvas'), { className: 'cp-canvas', width: 196, height: 140 });
@@ -2020,13 +2077,19 @@ function initColorPicker(containerId, initialHex, onChange, defaultHex) {
     const hex = '#' + hexInp.value;
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) { const h2 = _hexToHsv(hex); setHsv(h2.h, h2.s, h2.v, true); }
   });
+  hexInp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const hex = '#' + hexInp.value;
+      if (/^#[0-9a-fA-F]{6}$/.test(hex)) { const h2 = _hexToHsv(hex); setHsv(h2.h, h2.s, h2.v, true); }
+      popup.style.display = 'none';
+    }
+  });
 
   const picker = { close() { popup.style.display='none'; }, setValue(hex) { const h2=_hexToHsv(hex); setHsv(h2.h,h2.s,h2.v); } };
   _pickers[containerId] = picker;
   return picker;
 }
 
-document.addEventListener('click', () => Object.values(_pickers).forEach(p => p.close()));
 
 function hexLuminance(hex) {
   const toLinear = c => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
@@ -2392,7 +2455,20 @@ function closeZoom(e) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeZoom(); });
 
 // ── BOOT ─────────────────────────────────────────────
-async function exportPDF() {
+function exportPDF() {
+  document.getElementById('pdfConfirmOverlay').classList.add('open');
+}
+
+function closePdfConfirm() {
+  document.getElementById('pdfConfirmOverlay').classList.remove('open');
+}
+
+function confirmPdfDownload() {
+  closePdfConfirm();
+  startPdfDownload();
+}
+
+async function startPdfDownload() {
   const btn = document.getElementById('exportBtn');
   const bleedOn = true; // altijd met bleed exporteren
 
@@ -2465,6 +2541,17 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <!-- ═══ BEELDBANK MODAAL ══════════════════════════════ -->
+<div id="pdfConfirmOverlay">
+  <div id="pdfConfirmModal">
+    <h3>PDF downloaden</h3>
+    <p>Vergeet niet de PDF te mailen naar <strong>michelle@geefblink.nl</strong> als deze klaar is.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePdfConfirm()">Annuleren</button>
+      <button class="btn-ok" onclick="confirmPdfDownload()">Doorgaan</button>
+    </div>
+  </div>
+</div>
+
 <div id="beeldbankOverlay" onclick="closeBeeldbankOnOverlay(event)">
   <div id="beeldbankModal">
     <header>
