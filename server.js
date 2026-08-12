@@ -1,8 +1,12 @@
 'use strict';
 
-const http = require('http');
-const fs   = require('fs');
-const path = require('path');
+const http        = require('http');
+const fs          = require('fs');
+const path        = require('path');
+const os          = require('os');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const execFileAsync = promisify(execFile);
 
 const PORT = 8787;
 const ROOT = __dirname;
@@ -29,6 +33,31 @@ const MIME = {
   '.json': 'application/json',
   '.icc':  'application/vnd.iccprofile',
 };
+
+// ─── CMYK CONVERSIE ──────────────────────────────────────────────────────────
+
+async function convertToCMYK(pdfBuffer) {
+  const uid    = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const tmpIn  = path.join(os.tmpdir(), `blink-in-${uid}.pdf`);
+  const tmpOut = path.join(os.tmpdir(), `blink-out-${uid}.pdf`);
+  try {
+    fs.writeFileSync(tmpIn, pdfBuffer);
+    await execFileAsync('gs', [
+      '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
+      '-sDEVICE=pdfwrite',
+      '-sColorConversionStrategy=CMYK',
+      '-dProcessColorModel=/DeviceCMYK',
+      '-dCompatibilityLevel=1.4',
+      '-dPDFSETTINGS=/prepress',
+      '-sOutputFile=' + tmpOut,
+      tmpIn,
+    ]);
+    return fs.readFileSync(tmpOut);
+  } finally {
+    try { fs.unlinkSync(tmpIn);  } catch (_) {}
+    try { fs.unlinkSync(tmpOut); } catch (_) {}
+  }
+}
 
 // ─── PDF EXPORT ──────────────────────────────────────────────────────────────
 
@@ -332,6 +361,17 @@ async function generatePDF(state, bleed) {
     await browser.close();
     browserClosed = true;
 
+    // ── CMYK conversie via Ghostscript (zwart → K=100) ─────────────────────
+    let cmykConverted = false;
+    try {
+      pdfRaw       = Buffer.from(await convertToCMYK(pdfRaw));
+      pdfRawBinnen = Buffer.from(await convertToCMYK(pdfRawBinnen));
+      cmykConverted = true;
+      console.log('Ghostscript CMYK conversie geslaagd');
+    } catch (e) {
+      console.warn('Ghostscript niet beschikbaar, RGB-fallback:', e.message);
+    }
+
     // ── Build PDF ──────────────────────────────────────────────────────────
     const MM2PT   = 72 / 25.4;
     const trimWMm = dims.totPx / dims.S;   // 330mm
@@ -395,8 +435,11 @@ async function generatePDF(state, bleed) {
       applyTrimAndMarks(pdfDoc.getPages()[1]);
     }
 
-    // Embed sRGB ICC profile als OutputIntent
-    const iccCandidates = [
+    // Embed sRGB ICC profile als OutputIntent (alleen bij RGB-fallback)
+    if (cmykConverted) {
+      console.log('CMYK PDF — sRGB ICC-embedding overgeslagen');
+    }
+    const iccCandidates = cmykConverted ? [] : [
       path.join(__dirname, 'assets', 'icc', 'sRGB_IEC61966-2-1_black_scaled.icc'),
       '/System/Library/ColorSync/Profiles/sRGB Profile.icc',
       '/System/Library/ColorSync/Profiles/Generic RGB Profile.icc',
