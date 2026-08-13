@@ -48,7 +48,8 @@ async function convertToCMYK(pdfBuffer) {
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
       '-dCompatibilityLevel=1.4',
-      '-dCompressStreams=false',  // leesbare content streams voor black snapping
+      '-dCompressStreams=false',
+      '-dCompressPages=false',   // zeker leesbare pagina-content streams
       '-sOutputFile=' + tmpOut,
       tmpIn,
     ]);
@@ -60,24 +61,25 @@ async function convertToCMYK(pdfBuffer) {
 }
 
 // Rich-black CMYK → K=100.
-// Drempelwaarde: totale inkt (C+M+Y+K) > 2.0 — vangt FOGRA-rich-black (bijv. 71+65+63+67 = 266%).
+// Vangt k/K (CMYK shorthand) én sc/SC (generic operator met 4 CMYK-waarden).
+// Drempelwaarde: totale inkt > 2.0 — FOGRA-rich-black typisch ≈ 2.66.
 // Same-length vervanging zodat /Length in de PDF-streams intact blijft.
 function snapBlackInPDF(pdfBuf) {
   let pdf = pdfBuf.toString('latin1');
-  const re = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([kK])(?=\s)/g;
+  // Match k, K (shorthand CMYK) én sc, SC, scn, SCN (generic; 4 operanden = DeviceCMYK)
+  const re = /([\d.]+)[ \t]+([\d.]+)[ \t]+([\d.]+)[ \t]+([\d.]+)[ \t]+(k|K|sc|SC|scn|SCN)(?=[ \t\r\n]|$)/g;
   let count = 0;
   pdf = pdf.replace(re, (match, c, m, y, k, op) => {
     const total = parseFloat(c) + parseFloat(m) + parseFloat(y) + parseFloat(k);
     if (total > 2.0) {
       count++;
-      // Pad met spaties tot exact dezelfde lengte → /Length blijft correct
       const base = '0 0 0 1';
       const pad  = ' '.repeat(Math.max(0, match.length - base.length - 2));
       return `${base}${pad} ${op}`;
     }
     return match;
   });
-  if (count > 0) console.log(`Black snapping: ${count} rich-black CMYK → K=100`);
+  console.log(`Black snapping: ${count} rich-black CMYK → K=100 (PDF size: ${(pdfBuf.length / 1024).toFixed(0)} KB)`);
   return Buffer.from(pdf, 'latin1');
 }
 
