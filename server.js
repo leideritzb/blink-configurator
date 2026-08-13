@@ -39,47 +39,36 @@ const MIME = {
 async function convertToCMYK(pdfBuffer) {
   const uid    = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const tmpIn  = path.join(os.tmpdir(), `blink-in-${uid}.pdf`);
+  const tmpMid = path.join(os.tmpdir(), `blink-mid-${uid}.pdf`);
   const tmpOut = path.join(os.tmpdir(), `blink-out-${uid}.pdf`);
   try {
     fs.writeFileSync(tmpIn, pdfBuffer);
+    // Pass 1: ICCBased sRGB → DeviceRGB (strips ICC-tag zodat pass 2 rekenkundig converteert)
+    await execFileAsync('gs', [
+      '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
+      '-sDEVICE=pdfwrite',
+      '-sColorConversionStrategy=RGB',
+      '-dProcessColorModel=/DeviceRGB',
+      '-dCompatibilityLevel=1.4',
+      '-sOutputFile=' + tmpMid,
+      tmpIn,
+    ]);
+    // Pass 2: DeviceRGB → DeviceCMYK rekenkundig (geen ICC) → zwart = 0 0 0 1 = K=100
     await execFileAsync('gs', [
       '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
       '-sDEVICE=pdfwrite',
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
       '-dCompatibilityLevel=1.4',
-      '-dOverrideICC',
-      '-sDefaultCMYKProfile=default_cmyk.icc',
-      '-dCompressStreams=false',  // leesbare content streams voor black snapping
       '-sOutputFile=' + tmpOut,
-      tmpIn,
+      tmpMid,
     ]);
     return fs.readFileSync(tmpOut);
   } finally {
     try { fs.unlinkSync(tmpIn);  } catch (_) {}
+    try { fs.unlinkSync(tmpMid); } catch (_) {}
     try { fs.unlinkSync(tmpOut); } catch (_) {}
   }
-}
-
-// Rich-black CMYK (ICC-conversie van sRGB zwart) → K=100.
-// Werkt op ongecomprimeerde streams (-dCompressStreams=false).
-// Drempelwaarden: K≥0.75 én C,M beide ≥0.30 → agressieve rich-black, snap naar 0 0 0 1.
-function snapBlackInPDF(pdfBuffer) {
-  let pdf = pdfBuffer.toString('latin1');
-  const re = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([kK])(?=[\s\r\n]|$)/g;
-  let count = 0;
-  pdf = pdf.replace(re, (match, c, m, y, k, op) => {
-    const kf = parseFloat(k);
-    const cf = parseFloat(c);
-    const mf = parseFloat(m);
-    if (kf >= 0.75 && cf >= 0.30 && mf >= 0.30) {
-      count++;
-      return `0 0 0 1 ${op}`;
-    }
-    return match;
-  });
-  if (count > 0) console.log(`Black snapping: ${count} CMYK-waarden omgezet naar K=100`);
-  return Buffer.from(pdf, 'latin1');
 }
 
 // ─── PDF EXPORT ──────────────────────────────────────────────────────────────
@@ -389,10 +378,8 @@ async function generatePDF(state, bleed) {
     try {
       pdfRaw       = Buffer.from(await convertToCMYK(pdfRaw));
       pdfRawBinnen = Buffer.from(await convertToCMYK(pdfRawBinnen));
-      pdfRaw       = snapBlackInPDF(pdfRaw);
-      pdfRawBinnen = snapBlackInPDF(pdfRawBinnen);
       cmykConverted = true;
-      console.log('Ghostscript CMYK conversie + black snapping geslaagd');
+      console.log('Ghostscript CMYK conversie (2-pass) geslaagd');
     } catch (e) {
       console.warn('Ghostscript niet beschikbaar, RGB-fallback:', e.message);
     }
