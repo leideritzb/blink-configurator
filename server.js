@@ -48,8 +48,9 @@ async function convertToCMYK(pdfBuffer) {
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
       '-dCompatibilityLevel=1.4',
-      '-dOverrideICC',                         // negeer embedded ICC van Puppeteer
-      '-sDefaultCMYKProfile=default_cmyk.icc', // GS-profiel met 100% GCR → K=100 voor zwart
+      '-dOverrideICC',
+      '-sDefaultCMYKProfile=default_cmyk.icc',
+      '-dCompressStreams=false',  // leesbare content streams voor black snapping
       '-sOutputFile=' + tmpOut,
       tmpIn,
     ]);
@@ -58,6 +59,27 @@ async function convertToCMYK(pdfBuffer) {
     try { fs.unlinkSync(tmpIn);  } catch (_) {}
     try { fs.unlinkSync(tmpOut); } catch (_) {}
   }
+}
+
+// Rich-black CMYK (ICC-conversie van sRGB zwart) → K=100.
+// Werkt op ongecomprimeerde streams (-dCompressStreams=false).
+// Drempelwaarden: K≥0.75 én C,M beide ≥0.30 → agressieve rich-black, snap naar 0 0 0 1.
+function snapBlackInPDF(pdfBuffer) {
+  let pdf = pdfBuffer.toString('latin1');
+  const re = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([kK])(?=[\s\r\n]|$)/g;
+  let count = 0;
+  pdf = pdf.replace(re, (match, c, m, y, k, op) => {
+    const kf = parseFloat(k);
+    const cf = parseFloat(c);
+    const mf = parseFloat(m);
+    if (kf >= 0.75 && cf >= 0.30 && mf >= 0.30) {
+      count++;
+      return `0 0 0 1 ${op}`;
+    }
+    return match;
+  });
+  if (count > 0) console.log(`Black snapping: ${count} CMYK-waarden omgezet naar K=100`);
+  return Buffer.from(pdf, 'latin1');
 }
 
 // ─── PDF EXPORT ──────────────────────────────────────────────────────────────
@@ -367,8 +389,10 @@ async function generatePDF(state, bleed) {
     try {
       pdfRaw       = Buffer.from(await convertToCMYK(pdfRaw));
       pdfRawBinnen = Buffer.from(await convertToCMYK(pdfRawBinnen));
+      pdfRaw       = snapBlackInPDF(pdfRaw);
+      pdfRawBinnen = snapBlackInPDF(pdfRawBinnen);
       cmykConverted = true;
-      console.log('Ghostscript CMYK conversie geslaagd');
+      console.log('Ghostscript CMYK conversie + black snapping geslaagd');
     } catch (e) {
       console.warn('Ghostscript niet beschikbaar, RGB-fallback:', e.message);
     }
