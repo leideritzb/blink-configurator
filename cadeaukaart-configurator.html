@@ -586,6 +586,7 @@
         <div class="ctrl-row" style="position:relative;">
           <div id="cp-bgKleur"></div>
         </div>
+        <div id="gamut-bgKleur" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
         <div id="bgKleurWarn" style="display:none; margin-top:6px; padding:6px 8px; background:#fde8e8; border:1px solid #e53e3e; border-radius:4px; font-size:11px; color:#9b1c1c; line-height:1.4;">⚠ Achtergrondkleur is te donker. Zwarte tekst wordt onleesbaar.</div>
       </div>
 
@@ -611,6 +612,7 @@
             <div class="ctrl-row" style="position:relative;">
               <div id="cp-blinkKleur"></div>
             </div>
+            <div id="gamut-blinkKleur" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
           </div>
           <div class="range-label">
             <span>Dekking</span><span id="opacityVal">60%</span>
@@ -813,6 +815,7 @@
         <div id="binnenBlinkKleurCtrl" style="display:none; margin-top:8px;">
           <label style="display:block; font-size:12px; color:#444; margin-bottom:6px;">Kleur blinkertjes</label>
           <div class="ctrl-row" style="position:relative;"><div id="cp-binnenBlinkKleur"></div></div>
+          <div id="gamut-binnenBlinkKleur" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
           <div class="range-label" style="margin-top:8px;">
             <span>Dekking</span><span id="binnenOpacityVal">60%</span>
           </div>
@@ -827,23 +830,28 @@
       <div class="ctrl">
         <label>Hoofdkleur (kop + badge 1 + pijl)</label>
         <div class="ctrl-row" style="position:relative;"><div id="cp-binnenHoofd"></div></div>
+        <div id="gamut-binnenHoofd" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
       </div>
       <div class="ctrl">
         <label>Kleur logincode</label>
         <div class="ctrl-row" style="position:relative;"><div id="cp-binnenKleur2"></div></div>
+        <div id="gamut-binnenKleur2" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
       </div>
       <div class="ctrl">
         <label>Kleur wachtwoord</label>
         <div class="ctrl-row" style="position:relative;"><div id="cp-binnenKleur3"></div></div>
+        <div id="gamut-binnenKleur3" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
       </div>
       <div class="ctrl">
         <label>Kleur "zoek cadeau uit" veld</label>
         <div class="ctrl-row" style="position:relative;"><div id="cp-binnenKleurZoek"></div></div>
+        <div id="gamut-binnenKleurZoek" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
         <div id="zoekKleurWarn" style="display:none; margin-top:6px; padding:6px 8px; background:#fde8e8; border:1px solid #e53e3e; border-radius:4px; font-size:11px; color:#9b1c1c; line-height:1.4;">⚠ Kleur is te donker. Zwarte tekst wordt onleesbaar.</div>
       </div>
       <div class="ctrl">
         <label>Boogkleur</label>
         <div class="ctrl-row" style="position:relative;"><div id="cp-binnenBoog"></div></div>
+        <div id="gamut-binnenBoog" style="display:none; margin-top:5px; padding:5px 8px; border:1px solid #e4e4e0; border-radius:4px; font-size:11px; line-height:1.4;"></div>
       </div>
       <div class="ctrl">
         <label>Kleur "let op" tekst</label>
@@ -2105,6 +2113,30 @@ function checkDarkColor(hex, warnId) {
   el.style.display = hexLuminance(hex) < 0.25 ? 'block' : 'none';
 }
 
+function checkCmykGamut(hex, warnId) {
+  const el = document.getElementById(warnId);
+  if (!el) return;
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  // RGB → CMYK (arithmetisch)
+  const k = 1 - Math.max(r,g,b);
+  const d = k >= 1 ? 1 : 1 - k;
+  const c = k >= 1 ? 0 : (1-r-k)/d;
+  const m = k >= 1 ? 0 : (1-g-k)/d;
+  const y = k >= 1 ? 0 : (1-b-k)/d;
+  // HSV verzadiging
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+  const sat = mx === 0 ? 0 : (mx-mn)/mx;
+  const cmyk = `C:${Math.round(c*100)} M:${Math.round(m*100)} Y:${Math.round(y*100)} K:${Math.round(k*100)}`;
+  const outOfGamut = sat > 0.65;
+  el.style.display = 'block';
+  el.style.background = outOfGamut ? '#fffbeb' : '#f7f7f5';
+  el.style.borderColor = outOfGamut ? '#d97706' : '#e4e4e0';
+  el.innerHTML = (outOfGamut ? '<span style="color:#92400e;">⚠ Verzadigde kleur kan in druk afwijken.</span><br>' : '')
+    + `<span style="color:#666;">${cmyk}</span>`;
+}
+
 function colorWithOpacity(hex, alpha) {
   if (alpha >= 1) return hex;
   const r = parseInt(hex.slice(1, 3), 16);
@@ -2524,19 +2556,27 @@ async function startPdfDownload() {
 
 window.addEventListener('DOMContentLoaded', () => {
   loadState(); // herstel opgeslagen instellingen vóór alles
-  initColorPicker('cp-bgKleur',     st.bgKleur,     hex => { st.bgKleur     = hex; render(); checkDarkColor(hex,'bgKleurWarn'); },        '#f2cc7a');
-  initColorPicker('cp-blinkKleur',  st.blinkKleur,  hex => { st.blinkKleur  = hex; render(); },        '#ffffff');
-  initColorPicker('cp-binnenBlinkKleur', st.binnenBlinkKleur, hex => { st.binnenBlinkKleur = hex; renderBinnen(); }, '#f2cc7a');
-  initColorPicker('cp-binnenHoofd',  st.binnenHoofdKleur, hex => { st.binnenHoofdKleur = hex; renderBinnen(); render(); }, '#8cb16f');
-  initColorPicker('cp-binnenKleur2', st.binnenKleur2,     hex => { st.binnenKleur2     = hex; renderBinnen(); }, '#76a5b8');
-  initColorPicker('cp-binnenKleur3',    st.binnenKleur3,    hex => { st.binnenKleur3    = hex; renderBinnen(); }, '#f08889');
-  initColorPicker('cp-binnenKleurZoek', st.binnenKleurZoek, hex => { st.binnenKleurZoek = hex; renderBinnen(); checkDarkColor(hex,'zoekKleurWarn'); }, '#f8f0e4');
-  initColorPicker('cp-binnenBoog',   st.binnenBoogKleur,  hex => { st.binnenBoogKleur  = hex; layoutBinnenElements(); renderBinnen(); }, '#76a6b9');
+  initColorPicker('cp-bgKleur',     st.bgKleur,     hex => { st.bgKleur     = hex; render(); checkDarkColor(hex,'bgKleurWarn'); checkCmykGamut(hex,'gamut-bgKleur'); },        '#f2cc7a');
+  initColorPicker('cp-blinkKleur',  st.blinkKleur,  hex => { st.blinkKleur  = hex; render(); checkCmykGamut(hex,'gamut-blinkKleur'); },        '#ffffff');
+  initColorPicker('cp-binnenBlinkKleur', st.binnenBlinkKleur, hex => { st.binnenBlinkKleur = hex; renderBinnen(); checkCmykGamut(hex,'gamut-binnenBlinkKleur'); }, '#f2cc7a');
+  initColorPicker('cp-binnenHoofd',  st.binnenHoofdKleur, hex => { st.binnenHoofdKleur = hex; renderBinnen(); render(); checkCmykGamut(hex,'gamut-binnenHoofd'); }, '#8cb16f');
+  initColorPicker('cp-binnenKleur2', st.binnenKleur2,     hex => { st.binnenKleur2     = hex; renderBinnen(); checkCmykGamut(hex,'gamut-binnenKleur2'); }, '#76a5b8');
+  initColorPicker('cp-binnenKleur3',    st.binnenKleur3,    hex => { st.binnenKleur3    = hex; renderBinnen(); checkCmykGamut(hex,'gamut-binnenKleur3'); }, '#f08889');
+  initColorPicker('cp-binnenKleurZoek', st.binnenKleurZoek, hex => { st.binnenKleurZoek = hex; renderBinnen(); checkDarkColor(hex,'zoekKleurWarn'); checkCmykGamut(hex,'gamut-binnenKleurZoek'); }, '#f8f0e4');
+  initColorPicker('cp-binnenBoog',   st.binnenBoogKleur,  hex => { st.binnenBoogKleur  = hex; layoutBinnenElements(); renderBinnen(); checkCmykGamut(hex,'gamut-binnenBoog'); }, '#76a6b9');
   syncUI();
   initDim();
   render();
   checkDarkColor(st.bgKleur, 'bgKleurWarn');
   checkDarkColor(st.binnenKleurZoek, 'zoekKleurWarn');
+  checkCmykGamut(st.bgKleur,          'gamut-bgKleur');
+  checkCmykGamut(st.blinkKleur,       'gamut-blinkKleur');
+  checkCmykGamut(st.binnenBlinkKleur, 'gamut-binnenBlinkKleur');
+  checkCmykGamut(st.binnenHoofdKleur, 'gamut-binnenHoofd');
+  checkCmykGamut(st.binnenKleur2,     'gamut-binnenKleur2');
+  checkCmykGamut(st.binnenKleur3,     'gamut-binnenKleur3');
+  checkCmykGamut(st.binnenKleurZoek,  'gamut-binnenKleurZoek');
+  checkCmykGamut(st.binnenBoogKleur,  'gamut-binnenBoog');
 });
 </script>
 
