@@ -39,36 +39,46 @@ const MIME = {
 async function convertToCMYK(pdfBuffer) {
   const uid    = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const tmpIn  = path.join(os.tmpdir(), `blink-in-${uid}.pdf`);
-  const tmpMid = path.join(os.tmpdir(), `blink-mid-${uid}.pdf`);
   const tmpOut = path.join(os.tmpdir(), `blink-out-${uid}.pdf`);
   try {
     fs.writeFileSync(tmpIn, pdfBuffer);
-    // Pass 1: ICCBased sRGB → DeviceRGB (strips ICC-tag zodat pass 2 rekenkundig converteert)
-    await execFileAsync('gs', [
-      '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
-      '-sDEVICE=pdfwrite',
-      '-sColorConversionStrategy=RGB',
-      '-dProcessColorModel=/DeviceRGB',
-      '-dCompatibilityLevel=1.4',
-      '-sOutputFile=' + tmpMid,
-      tmpIn,
-    ]);
-    // Pass 2: DeviceRGB → DeviceCMYK rekenkundig (geen ICC) → zwart = 0 0 0 1 = K=100
     await execFileAsync('gs', [
       '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
       '-sDEVICE=pdfwrite',
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
       '-dCompatibilityLevel=1.4',
+      '-dCompressStreams=false',  // leesbare content streams voor black snapping
       '-sOutputFile=' + tmpOut,
-      tmpMid,
+      tmpIn,
     ]);
     return fs.readFileSync(tmpOut);
   } finally {
     try { fs.unlinkSync(tmpIn);  } catch (_) {}
-    try { fs.unlinkSync(tmpMid); } catch (_) {}
     try { fs.unlinkSync(tmpOut); } catch (_) {}
   }
+}
+
+// Rich-black CMYK → K=100.
+// Drempelwaarde: totale inkt (C+M+Y+K) > 2.0 — vangt FOGRA-rich-black (bijv. 71+65+63+67 = 266%).
+// Same-length vervanging zodat /Length in de PDF-streams intact blijft.
+function snapBlackInPDF(pdfBuf) {
+  let pdf = pdfBuf.toString('latin1');
+  const re = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([kK])(?=\s)/g;
+  let count = 0;
+  pdf = pdf.replace(re, (match, c, m, y, k, op) => {
+    const total = parseFloat(c) + parseFloat(m) + parseFloat(y) + parseFloat(k);
+    if (total > 2.0) {
+      count++;
+      // Pad met spaties tot exact dezelfde lengte → /Length blijft correct
+      const base = '0 0 0 1';
+      const pad  = ' '.repeat(Math.max(0, match.length - base.length - 2));
+      return `${base}${pad} ${op}`;
+    }
+    return match;
+  });
+  if (count > 0) console.log(`Black snapping: ${count} rich-black CMYK → K=100`);
+  return Buffer.from(pdf, 'latin1');
 }
 
 // ─── PDF EXPORT ──────────────────────────────────────────────────────────────
@@ -378,8 +388,10 @@ async function generatePDF(state, bleed) {
     try {
       pdfRaw       = Buffer.from(await convertToCMYK(pdfRaw));
       pdfRawBinnen = Buffer.from(await convertToCMYK(pdfRawBinnen));
+      pdfRaw       = snapBlackInPDF(pdfRaw);
+      pdfRawBinnen = snapBlackInPDF(pdfRawBinnen);
       cmykConverted = true;
-      console.log('Ghostscript CMYK conversie (2-pass) geslaagd');
+      console.log('Ghostscript CMYK + black snapping geslaagd');
     } catch (e) {
       console.warn('Ghostscript niet beschikbaar, RGB-fallback:', e.message);
     }
