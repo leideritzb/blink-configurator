@@ -278,7 +278,7 @@ async function generatePDF(state, bleed) {
     const pgHMm = (hCss + 2 * marginCssPx) / dims.S;
     // scale:1 (default) — de zoom:96/72 op root zorgt al dat 1 CSS px = 1/72 inch.
     // scale>1 zou content rechts/onder wegknippen; zoom op root doet dat niet.
-    const pdfRaw = await page.pdf({
+    let pdfRaw = await page.pdf({
       width:           `${pgWMm}mm`,
       height:          `${pgHMm}mm`,
       printBackground: true,
@@ -374,7 +374,7 @@ async function generatePDF(state, bleed) {
 
     await new Promise(r => setTimeout(r, 800));
 
-    const pdfRawBinnen = await page.pdf({
+    let pdfRawBinnen = await page.pdf({
       width:           `${pgWMm}mm`,
       height:          `${pgHMm}mm`,
       printBackground: true,
