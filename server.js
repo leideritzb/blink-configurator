@@ -557,6 +557,14 @@ function storePDF(buf) {
 
 http.createServer((req, res) => {
 
+  if (req.method === 'GET' && req.url === '/version') {
+    const sha = (process.env.RAILWAY_GIT_COMMIT_SHA || 'local').slice(0, 7);
+    const ts  = new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' });
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end(`commit: ${sha}\nserver time: ${ts}\n`);
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/export-pdf') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
