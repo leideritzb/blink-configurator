@@ -2130,11 +2130,11 @@ function checkCmykGamut(hex, warnId) {
   const sat = mx === 0 ? 0 : (mx-mn)/mx;
   const cmyk = `C:${Math.round(c*100)} M:${Math.round(m*100)} Y:${Math.round(y*100)} K:${Math.round(k*100)}`;
   const outOfGamut = sat > 0.65;
+  if (!outOfGamut) { el.style.display = 'none'; return; }
   el.style.display = 'block';
-  el.style.background = outOfGamut ? '#fffbeb' : '#f7f7f5';
-  el.style.borderColor = outOfGamut ? '#d97706' : '#e4e4e0';
-  el.innerHTML = (outOfGamut ? '<span style="color:#92400e;">⚠ Verzadigde kleur kan in druk afwijken.</span><br>' : '')
-    + `<span style="color:#666;">${cmyk}</span>`;
+  el.style.background = '#fffbeb';
+  el.style.borderColor = '#d97706';
+  el.innerHTML = `<span style="color:#92400e;">⚠ Verzadigde kleur kan in druk afwijken.</span><br><span style="color:#666;">${cmyk}</span>`;
 }
 
 function colorWithOpacity(hex, alpha) {
