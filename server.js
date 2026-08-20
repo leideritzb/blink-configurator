@@ -559,6 +559,12 @@ function storePDF(buf) {
 
 http.createServer((req, res) => {
 
+  if (req.method === 'GET' && req.url === '/robots.txt') {
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('User-agent: *\nDisallow: /\n');
+    return;
+  }
+
   if (req.method === 'GET' && req.url === '/version') {
     const sha = (process.env.RAILWAY_GIT_COMMIT_SHA || 'local').slice(0, 7);
     const ts  = new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' });
@@ -638,8 +644,9 @@ http.createServer((req, res) => {
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); res.end('Not found'); return; }
     res.writeHead(200, {
-      'Content-Type':  MIME[ext] || 'application/octet-stream',
-      'Cache-Control': 'no-store',
+      'Content-Type':    MIME[ext] || 'application/octet-stream',
+      'Cache-Control':   'no-store',
+      'X-Robots-Tag':    'noindex, nofollow',
     });
     res.end(data);
   });
