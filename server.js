@@ -47,7 +47,7 @@ async function convertToCMYK(pdfBuffer) {
       '-sDEVICE=pdfwrite',
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
-      '-dCompatibilityLevel=1.4',
+      '-dCompatibilityLevel=1.3',
       '-dCompressStreams=false',
       '-dCompressPages=false',   // zeker leesbare pagina-content streams
       '-sOutputFile=' + tmpOut,
