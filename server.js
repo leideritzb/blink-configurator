@@ -270,6 +270,9 @@ async function generatePDF(state, bleed) {
       document.body.style.setProperty('overflow-x', 'hidden', 'important');
     });
 
+    // Gradient als canvas PNG — vermijdt CSS transparantiegroepen die GS drukt weg
+    await page.evaluate(() => { if (typeof applyGradAsPNG === 'function') applyGradAsPNG(); });
+
     // Wacht op font/SVG rendering
     await new Promise(r => setTimeout(r, 800));
 

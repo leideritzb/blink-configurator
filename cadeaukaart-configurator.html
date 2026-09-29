@@ -1336,6 +1336,31 @@ function applyGradBackground() {
   if (gr) gr.style.background = gradCss;
 }
 
+// Vervangt CSS-gradient door canvas PNG voor CMYK-compatibiliteit.
+// Aangeroepen vanuit server.js via page.evaluate() nadat layout klaar is.
+function applyGradAsPNG() {
+  const stopPx = st.gradTop;
+  ['cadeauGrad', 'binnenGradMid', 'binnenGradRechts'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const h = el.offsetHeight;
+    if (!h) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const grd = ctx.createLinearGradient(0, 0, 0, h);
+    const r = Math.min(stopPx / h, 0.9999);
+    grd.addColorStop(0, 'rgba(255,255,255,0)');
+    if (r > 0.001) grd.addColorStop(r, 'rgba(255,255,255,0)');
+    grd.addColorStop(Math.min(r + 0.0001, 1), 'rgba(255,255,255,1)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 2, h);
+    el.style.background = 'url(' + canvas.toDataURL('image/png') + ') top left / 100% 100% no-repeat';
+  });
+}
+
 function setGradTop(v) {
   st.gradTop = Math.max(0, Math.min(W.h - 10, v));
   window.gradTop = st.gradTop;
