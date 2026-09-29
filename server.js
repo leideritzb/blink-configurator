@@ -42,13 +42,14 @@ async function convertToCMYK(pdfBuffer) {
   const tmpOut = path.join(os.tmpdir(), `blink-out-${uid}.pdf`);
   try {
     fs.writeFileSync(tmpIn, pdfBuffer);
-    // Enkelvoudige pass: alleen CMYK-conversie, geen decompressie
     await execFileAsync('gs', [
       '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
       '-sDEVICE=pdfwrite',
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
       '-dCompatibilityLevel=1.4',
+      '-dCompressStreams=false',
+      '-dCompressPages=false',
       '-sOutputFile=' + tmpOut,
       tmpIn,
     ]);
