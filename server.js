@@ -271,7 +271,7 @@ async function generatePDF(state, bleed) {
     });
 
     // Gradient als canvas PNG — vermijdt CSS transparantiegroepen die GS drukt weg
-    await page.evaluate(() => { if (typeof applyGradAsPNG === 'function') applyGradAsPNG(); });
+    await page.evaluate(() => { if (typeof applyGradAsPNG === 'function') applyGradAsPNG(undefined, ['cadeauGrad']); });
 
     // Wacht op font/SVG rendering
     await new Promise(r => setTimeout(r, 800));
@@ -374,6 +374,12 @@ async function generatePDF(state, bleed) {
         }
       }
     }, state, bleed);
+
+    // Binnenkant gradient als canvas PNG (bleed-gecorrigeerde stop meegeven)
+    await page.evaluate((gradStop) => {
+      if (typeof applyGradAsPNG === 'function')
+        applyGradAsPNG(gradStop, ['binnenGradMid', 'binnenGradRechts']);
+    }, bleed ? state.gradTop + dims.bpx : state.gradTop);
 
     await new Promise(r => setTimeout(r, 800));
 

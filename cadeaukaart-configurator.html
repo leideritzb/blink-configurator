@@ -1337,10 +1337,13 @@ function applyGradBackground() {
 }
 
 // Vervangt CSS-gradient door canvas PNG voor CMYK-compatibiliteit.
+// stopOverride: stop-positie in px (optioneel, default = st.gradTop).
+// ids: array van element-IDs (optioneel, default = alle drie).
 // Aangeroepen vanuit server.js via page.evaluate() nadat layout klaar is.
-function applyGradAsPNG() {
-  const stopPx = st.gradTop;
-  ['cadeauGrad', 'binnenGradMid', 'binnenGradRechts'].forEach(function(id) {
+function applyGradAsPNG(stopOverride, ids) {
+  const stopPx = (stopOverride !== undefined) ? stopOverride : st.gradTop;
+  const targets = ids || ['cadeauGrad', 'binnenGradMid', 'binnenGradRechts'];
+  targets.forEach(function(id) {
     const el = document.getElementById(id);
     if (!el) return;
     const h = el.offsetHeight;
