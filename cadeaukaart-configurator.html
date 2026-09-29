@@ -783,6 +783,15 @@
     <div class="section">
       <div class="section-title">Brieftekst</div>
       <div class="ctrl">
+        <div class="toggle-row">
+          <span>"Beste [naam]," tonen</span>
+          <label class="toggle">
+            <input type="checkbox" id="aanhefToggle" checked onchange="st.binnenAanhefTonen=this.checked; renderBinnen();">
+            <span class="tog-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="ctrl">
         <label>Intro (semibold)</label>
         <textarea class="text-input" id="binnenIntroInput" rows="4"
           oninput="st.binnenIntroText=this.value; renderBinnen();"></textarea>
@@ -1181,6 +1190,7 @@ const st = {
   logoNatW:     0,
   logoNatH:     0,
   // Binnenkant
+  binnenAanhefTonen: true,
   binnenNaam:       '[naam]',
   binnenUrl:        'jouwblink.nl/bedrijfsnaam',
   binnenGeldig:     'van 6-12-23 t/m 31-03-24',
@@ -1750,8 +1760,13 @@ function renderBinnen() {
 
   // Aanhef
   const aanhef = document.getElementById('binnenAanhef');
-  aanhef.textContent = 'Beste ' + st.binnenNaam + ',';
-  aanhef.style.color = '#000000';
+  if (st.binnenAanhefTonen) {
+    aanhef.textContent = 'Beste ' + st.binnenNaam + ',';
+    aanhef.style.color = '#000000';
+    aanhef.style.display = '';
+  } else {
+    aanhef.style.display = 'none';
+  }
 
   // Heading + pijl kleur
   const vt = document.getElementById('verzilverTxt');
@@ -1866,6 +1881,7 @@ function syncUI() {
   if (jbuTI) jbuTI.value = st.jbuTekst || 'jij blinkt uit';
   applyGradBackground();
   // Binnenkant velden
+  const _atI = document.getElementById('aanhefToggle');         if (_atI) _atI.checked = st.binnenAanhefTonen;
   const _bnI = document.getElementById('binnenNaamInput');      if (_bnI) _bnI.value = st.binnenNaam;
   const _buI = document.getElementById('binnenUrlInput');       if (_buI) _buI.value = st.binnenUrl;
   const _bgI = document.getElementById('binnenGeldigInput');    if (_bgI) _bgI.value = st.binnenGeldig;
