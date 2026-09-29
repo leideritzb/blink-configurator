@@ -43,20 +43,21 @@ async function convertToCMYK(pdfBuffer) {
   const tmpOut = path.join(os.tmpdir(), `blink-out-${uid}.pdf`);
   try {
     fs.writeFileSync(tmpIn, pdfBuffer);
-    // Pass 1: flatten transparantie (PDF 1.3 heeft geen native transparantie)
-    await execFileAsync('gs', [
-      '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
-      '-sDEVICE=pdfwrite',
-      '-dCompatibilityLevel=1.3',
-      '-sOutputFile=' + tmpMid,
-      tmpIn,
-    ]);
-    // Pass 2: CMYK-conversie op het geflattende PDF
+    // Pass 1: CMYK-conversie (gecomprimeerd, transparantie bewaard)
     await execFileAsync('gs', [
       '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
       '-sDEVICE=pdfwrite',
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
+      '-dCompatibilityLevel=1.4',
+      '-sOutputFile=' + tmpMid,
+      tmpIn,
+    ]);
+    // Pass 2: decompressen voor black snapping (kleuren ongewijzigd)
+    await execFileAsync('gs', [
+      '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
+      '-sDEVICE=pdfwrite',
+      '-sColorConversionStrategy=LeaveColorUnchanged',
       '-dCompatibilityLevel=1.4',
       '-dCompressStreams=false',
       '-dCompressPages=false',
