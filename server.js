@@ -39,23 +39,34 @@ const MIME = {
 async function convertToCMYK(pdfBuffer) {
   const uid    = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const tmpIn  = path.join(os.tmpdir(), `blink-in-${uid}.pdf`);
+  const tmpMid = path.join(os.tmpdir(), `blink-mid-${uid}.pdf`);
   const tmpOut = path.join(os.tmpdir(), `blink-out-${uid}.pdf`);
   try {
     fs.writeFileSync(tmpIn, pdfBuffer);
+    // Pass 1: flatten transparantie (PDF 1.3 heeft geen native transparantie)
+    await execFileAsync('gs', [
+      '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
+      '-sDEVICE=pdfwrite',
+      '-dCompatibilityLevel=1.3',
+      '-sOutputFile=' + tmpMid,
+      tmpIn,
+    ]);
+    // Pass 2: CMYK-conversie op het geflattende PDF
     await execFileAsync('gs', [
       '-dBATCH', '-dNOPAUSE', '-dSAFER', '-q',
       '-sDEVICE=pdfwrite',
       '-sColorConversionStrategy=CMYK',
       '-dProcessColorModel=/DeviceCMYK',
-      '-dCompatibilityLevel=1.3',
+      '-dCompatibilityLevel=1.4',
       '-dCompressStreams=false',
-      '-dCompressPages=false',   // zeker leesbare pagina-content streams
+      '-dCompressPages=false',
       '-sOutputFile=' + tmpOut,
-      tmpIn,
+      tmpMid,
     ]);
     return fs.readFileSync(tmpOut);
   } finally {
     try { fs.unlinkSync(tmpIn);  } catch (_) {}
+    try { fs.unlinkSync(tmpMid); } catch (_) {}
     try { fs.unlinkSync(tmpOut); } catch (_) {}
   }
 }
