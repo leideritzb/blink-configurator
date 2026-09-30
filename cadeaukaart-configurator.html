@@ -792,6 +792,11 @@
         </div>
       </div>
       <div class="ctrl">
+        <label>Aanhef naam</label>
+        <input type="text" class="text-input" id="binnenNaamInput" value="[naam]" placeholder="bijv. collega"
+          oninput="st.binnenNaam=this.value; renderBinnen();" style="padding:6px 8px;">
+      </div>
+      <div class="ctrl">
         <label>Intro (semibold)</label>
         <textarea class="text-input" id="binnenIntroInput" rows="4"
           oninput="st.binnenIntroText=this.value; renderBinnen();"></textarea>
